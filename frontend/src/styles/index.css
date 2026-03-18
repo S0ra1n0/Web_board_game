@@ -1,7 +1,7 @@
 :root {
   /* Light Theme */
   --bg-primary: #f0f2f5;
-  --bg-secondary: #ffffff;
+  --bg-secondary: #f8fafc;
   --text-primary: #1a1a1b;
   --text-secondary: #5c6370;
   --accent-primary: #6366f1;
@@ -9,7 +9,7 @@
   --error: #ef4444;
   --success: #22c55e;
   --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-border: rgba(0, 0, 0, 0.15);
   --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
 }
 

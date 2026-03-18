@@ -6,14 +6,15 @@ import GameMatrix from '../components/hub/GameMatrix';
 import GameControls from '../components/hub/GameControls';
 import { getCaroArt, getTicTacToeArt, getMemoryArt, getDrawArt } from '../utils/pixelArt';
 
-const GRID_SIZE = 15;
+const GRID_SIZE = 20;
 
 const GAMES = [
-    { id: 'CARO', title: 'Vietnamese Caro (5-in-a-row)', render: getCaroArt },
+    { id: 'CARO', title: 'Caro 5', render: getCaroArt },
     { id: 'TICTACTOE', title: 'Tic-Tac-Toe', render: getTicTacToeArt },
     { id: 'MEMORY', title: 'Memory Match', render: getMemoryArt },
     { id: 'DRAW', title: 'Free Drawing Board', render: getDrawArt }
 ];
+
 
 const UserHome = () => {
     const { user } = useAuth();
@@ -76,10 +77,11 @@ const UserHome = () => {
                 )}
             </div>
 
-            <StatsSidebar />
+            <StatsSidebar activeGame={GAMES[gameIndex]} />
         </div>
     );
 };
+
 
 export default UserHome;
 
