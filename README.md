@@ -29,8 +29,17 @@ Contains the front-facing user interface of the application.
   - `VerifyRegisterPage.jsx`: UI that catches the `/:token` registration link. On validation, permanently saves the user into the database and issues success screen.
   - `ResetPasswordPage.jsx`: UI for requesting a password reset. Sends a verification token link to the user's email.
   - `VerifyResetPage.jsx`: UI that catches the emailed `/:token` password-reset link and finalizes the password reset securely.
-  - `UserHome.jsx`: Protected dashboard representing the standard user's landing page.
+  - `UserHome.jsx`: Protected dashboard acting as a fully-featured retro Game Hub Virtual Console with a 20x20 LED pixel matrix, custom sidebars, and dynamic leaderboards.
   - `AdminHome.jsx`: Protected dashboard for admin users only.
+  
+- `/src/components/hub/`
+  - `GameMatrix.jsx`: Core display logic for the 20x20 visual matrix, which renders actual game states like Tic-Tac-Toe and Menu Pixel Art.
+  - `GameControls.jsx`: Emulated physical console buttons providing strictly Left, Right, Enter, Back, and Hint inputs to navigate the UI.
+  - `SocialSidebar.jsx`: Displays user profile cards with real-time ranks, achievement trackers, and friends lists.
+  - `StatsSidebar.jsx`: Live query system pulling global leaderboards securely from the PostgreSQL backend.
+  
+- `/src/hooks/`
+  - `useTicTacToe.jsx`: Standalone game logic module that maps Tic-Tac-Toe moves exclusively to the 5-button interface and overlays its graphics directly onto the Matrix.
 - `/src/context/`
   - `AuthContext.jsx`: Global state manager. Handles JWT tokens in `localStorage`, `user` object access, API communication for auth, and Theme configuration (Light/Dark mode).
 - `/src/styles/`
@@ -41,16 +50,18 @@ Contains the front-facing user interface of the application.
 Contains the REST API server, database configurations, routing, and controllers.
 
 - `/controllers/`
-  - `authController.js`: Core logic for `register`, `login`, `requestPasswordReset`, and `verifyPasswordReset`. Handles input validation constraints, duplicate checking, bcrypt hashing, and generating JWTs (including temporary 10-minute reset tokens).
+  - `authController.js`: Core logic for auth... Uses bcrypt hashing and JWT.
+  - `userController.js`: Manages secure endpoint queries for fetching Global Leaderboards and tracking/upserting live player stat scores and wins inside the Postgres `user_stats` table.
 - `/middleware/`
   - `authMiddleware.js`: Security layer. `protect` verifies if requests have a valid JWT. `restrictTo` acts as a factory function to block access unless the user matches specific roles (e.g., 'admin').
 - `/routes/`
   - `authRoutes.js`: Maps endpoints like `/api/auth/login` to the appropriate controller methods.
+  - `userRoutes.js`: Exposes `/stats` and `/leaderboard/:game_id` endpoints.
   - `adminRoutes.js`: Example routes meant exclusively for admins, secured entirely by `authMiddleware.restrictTo('admin')`.
 - `/db/` 
   - `db.js`: Initializes database connection via Knex.
-  - `/migrations/`: SQL definition files that construct and alter the database schema (users, games, sessions, ratings).
-  - `/seeds/`: Scripts to wipe database tables and insert starting data (e.g., `01_users.js` populates default admin and user profiles).
+  - `/migrations/`: SQL definition files that construct and alter the database schema (users, games, sessions, user_stats, ratings).
+  - `/seeds/`: Scripts to wipe database tables and insert starting data.
 
 ---
 

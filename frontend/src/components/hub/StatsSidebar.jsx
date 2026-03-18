@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 
 const BOARDS = [
     { id: 'CARO', title: 'Caro 5', label: 'Wins' },
@@ -6,20 +7,71 @@ const BOARDS = [
     { id: 'MEMORY', title: 'Memory Match', label: 'High Score' }
 ];
 
-const StatsSidebar = ({ activeGame }) => {
+const StatsSidebar = ({ activeGame, userStats = {} }) => {
+    const { user, token } = useAuth();
     const [boardIndex, setBoardIndex] = useState(0);
+    const [filter, setFilter] = useState('global');
+    const [leaderboard, setLeaderboard] = useState([]);
 
     const handlePrevBoard = () => setBoardIndex(prev => (prev === 0 ? BOARDS.length - 1 : prev - 1));
     const handleNextBoard = () => setBoardIndex(prev => (prev === BOARDS.length - 1 ? 0 : prev + 1));
 
     const currentBoard = BOARDS[boardIndex];
 
+    useEffect(() => {
+        if (!token) return;
+        const fetchLeaderboard = async () => {
+            try {
+                const res = await fetch(`/api/users/leaderboard/${currentBoard.id}?filter=${filter}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setLeaderboard(data);
+                }
+            } catch (err) {
+                console.error('Failed to fetch leaderboard');
+            }
+        };
+        fetchLeaderboard();
+    }, [currentBoard.id, filter, token, userStats]); // re-fetch if userStats changes
+
     const renderRankings = () => {
+        const statKey = currentBoard.id === 'MEMORY' ? 'highScore' : 'wins';
+        const userStatValue = userStats[currentBoard.id]?.[statKey] || 0;
+
         return (
-            <div className="placeholder-list" style={{ marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <p>1. PlayerOne - 150 {currentBoard.label}</p>
-                <p>2. PlayerTwo - 120 {currentBoard.label}</p>
-                <p>3. You - 10 {currentBoard.label}</p>
+            <div style={{ marginTop: '1rem' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                    <button 
+                        onClick={() => setFilter('global')}
+                        className={`control-btn ${filter === 'global' ? 'enter-btn' : 'action-btn'}`}
+                        style={{ flex: 1, padding: '0.25rem 0', fontSize: '0.8rem', borderRadius: '8px' }}
+                    >Global</button>
+                    <button 
+                        onClick={() => setFilter('friends')}
+                        className={`control-btn ${filter === 'friends' ? 'enter-btn' : 'action-btn'}`}
+                        style={{ flex: 1, padding: '0.25rem 0', fontSize: '0.8rem', borderRadius: '8px' }}
+                    >Friends</button>
+                </div>
+                
+                <div className="placeholder-list" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {leaderboard.length === 0 ? (
+                        <p style={{ textAlign: 'center', fontStyle: 'italic', margin: '0.5rem 0' }}>No ranking data yet...</p>
+                    ) : (
+                        leaderboard.map((entry, idx) => (
+                            <p key={idx} style={{ 
+                                color: entry.username === user?.username ? 'var(--accent-primary)' : 'inherit', 
+                                fontWeight: entry.username === user?.username ? 'bold' : 'normal' 
+                            }}>
+                                {idx + 1}. {entry.username} - {entry.score} {currentBoard.label}
+                            </p>
+                        ))
+                    )}
+                    
+                    <hr style={{ border: 'none', borderTop: '1px solid var(--glass-border)', margin: '0.5rem 0' }} />
+                    <p style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>You: {userStatValue} {currentBoard.label}</p>
+                </div>
             </div>
         );
     };
