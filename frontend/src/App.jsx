@@ -5,6 +5,8 @@ import { Sun, Moon } from 'lucide-react';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import VerifyResetPage from './pages/VerifyResetPage';
+import VerifyRegisterPage from './pages/VerifyRegisterPage';
 import UserHome from './pages/UserHome';
 import AdminHome from './pages/AdminHome';
 
@@ -36,6 +38,8 @@ const MainApp = () => {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/verify-reset/:token" element={<VerifyResetPage />} />
+                <Route path="/verify-register/:token" element={<VerifyRegisterPage />} />
                 <Route
                     path="/user"
                     element={

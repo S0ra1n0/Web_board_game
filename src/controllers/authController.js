@@ -16,33 +16,96 @@ exports.register = async (req, res) => {
             return res.status(400).json({ error: 'Please provide username, email, and password' });
         }
 
+        if (username.length < 3) {
+            return res.status(400).json({ error: 'Username must be at least 3 characters long' });
+        }
+        if (password.length < 3) {
+            return res.status(400).json({ error: 'Password must be at least 3 characters long' });
+        }
+        if (!email.includes('@')) {
+            return res.status(400).json({ error: 'Invalid email format' });
+        }
+
         // Check if user already exists
-        const existingUser = await db('users').where({ email }).orWhere({ username }).first();
-        if (existingUser) {
-            return res.status(400).json({ error: 'User already exists with this email or username' });
+        const existingUsername = await db('users').where({ username }).first();
+        if (existingUsername) {
+            return res.status(400).json({ error: 'Username already exists' });
+        }
+        
+        const existingEmail = await db('users').where({ email }).first();
+        if (existingEmail) {
+            return res.status(400).json({ error: 'Email already exists' });
         }
 
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 12);
 
-        // Create user (default role is 'user')
-        const [newUser] = await db('users').insert({
-            username,
-            email,
-            password_hash: hashedPassword,
-            role: 'user'
-        }).returning(['id', 'username', 'email', 'role']);
+        // Instead of saving to DB immediately, generate a token with the payload
+        // Expires in 15 minutes
+        const registerToken = jwt.sign(
+            { username, email, password_hash: hashedPassword },
+            process.env.JWT_SECRET,
+            { expiresIn: '15m' }
+        );
 
-        const token = signToken(newUser.id, newUser.role);
+        const verificationLink = `http://localhost:5173/verify-register/${registerToken}`;
+        const message = `Please click the following link to verify and create your account:\n\n${verificationLink}\n\nIf you didn't request this, please ignore this email.`;
 
-        res.status(201).json({
-            status: 'success',
-            token,
-            data: { user: newUser }
-        });
+        try {
+            const sendEmail = require('../utils/sendEmail');
+            await sendEmail({
+                email,
+                subject: 'Account Registration Verification',
+                message: message
+            });
+
+            res.status(200).json({
+                status: 'success',
+                message: 'Verification email sent. It expires in 15 minutes.'
+            });
+        } catch (err) {
+            console.error('Email sending error:', err);
+            return res.status(500).json({ error: 'Failed to send verification email. Ensure EMAIL_USER and EMAIL_PASS are correct.' });
+        }
     } catch (error) {
         console.error('Registration error:', error);
         res.status(500).json({ error: 'Failed to register user' });
+    }
+};
+
+exports.verifyRegister = async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token) return res.status(400).json({ error: 'Verification token is required' });
+
+        // Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // Check again if username or email is taken (they might have been taken while token was pending)
+        const existingUser = await db('users').where({ email: decoded.email }).orWhere({ username: decoded.username }).first();
+        if (existingUser) {
+            return res.status(400).json({ error: 'User already exists with this email or username' });
+        }
+
+        // Create user (default role is 'user')
+        const [newUser] = await db('users').insert({
+            username: decoded.username,
+            email: decoded.email,
+            password_hash: decoded.password_hash,
+            role: 'user'
+        }).returning(['id', 'username', 'email', 'role']);
+
+        res.status(201).json({
+            status: 'success',
+            message: 'Account successfully created',
+            username: newUser.username
+        });
+    } catch (error) {
+        console.error('Verify register error:', error);
+        if (error.name === 'TokenExpiredError') {
+            return res.status(400).json({ error: 'Verification link expired. Please register again.' });
+        }
+        res.status(400).json({ error: 'Invalid or missing verification token' });
     }
 };
 
@@ -77,16 +140,23 @@ exports.login = async (req, res) => {
     }
 };
 
-exports.resetPassword = async (req, res) => {
+exports.requestPasswordReset = async (req, res) => {
     try {
-        const { username, newPassword } = req.body;
+        const { email, newPassword } = req.body;
 
-        if (!username || !newPassword) {
-            return res.status(400).json({ error: 'Please provide username and new password' });
+        if (!email || !newPassword) {
+            return res.status(400).json({ error: 'Please provide email and new password' });
         }
 
-        // Find user by username
-        const user = await db('users').where({ username }).first();
+        if (newPassword.length < 3) {
+            return res.status(400).json({ error: 'Password must be at least 3 characters long' });
+        }
+        if (!email.includes('@')) {
+            return res.status(400).json({ error: 'Invalid email format' });
+        }
+
+        // Find user by email
+        const user = await db('users').where({ email }).first();
         if (!user) {
             return res.status(404).json({ error: 'User does not exist' });
         }
@@ -94,17 +164,67 @@ exports.resetPassword = async (req, res) => {
         // Hash new password
         const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-        // Update password
-        await db('users').where({ id: user.id }).update({
-            password_hash: hashedPassword
+        // Create a temporary verification token containing user id and the new password hash
+        // Expires in 10 minutes
+        const resetToken = jwt.sign(
+            { id: user.id, newPasswordHash: hashedPassword }, 
+            process.env.JWT_SECRET, 
+            { expiresIn: '10m' }
+        );
+
+        const verificationLink = `http://localhost:5173/verify-reset/${resetToken}`;
+        const message = `Please click the following link to verify your password reset:\n\n${verificationLink}\n\nIf you didn't request this, please ignore this email.`;
+
+        try {
+            // Import at top but since it's common JS, we can require it here or top
+            const sendEmail = require('../utils/sendEmail');
+            await sendEmail({
+                email: user.email,
+                subject: 'Password Reset Verification',
+                message: message
+            });
+
+            res.status(200).json({
+                status: 'success',
+                message: 'Verification email sent. It expires in 10 minutes.'
+            });
+        } catch (err) {
+            console.error('Email sending error:', err);
+            return res.status(500).json({ error: 'There was an error sending the email. Ensure EMAIL_USER and EMAIL_PASS are correct.' });
+        }
+    } catch (error) {
+        console.error('Request reset error:', error);
+        res.status(500).json({ error: 'Failed to request password reset' });
+    }
+};
+
+exports.verifyPasswordReset = async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token) return res.status(400).json({ error: 'Verification token is required' });
+
+        // Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        // Find user inside to get their username for the frontend success message
+        const user = await db('users').where({ id: decoded.id }).first();
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        // Apply password change
+        await db('users').where({ id: decoded.id }).update({
+            password_hash: decoded.newPasswordHash
         });
 
         res.status(200).json({
             status: 'success',
-            message: 'Password reset successful'
+            message: 'Password successfully reset',
+            username: user.username
         });
     } catch (error) {
-        console.error('Reset password error:', error);
-        res.status(500).json({ error: 'Failed to reset password' });
+        console.error('Verify reset error:', error);
+        if (error.name === 'TokenExpiredError') {
+            return res.status(400).json({ error: 'Verification link expired. Please request a new one.' });
+        }
+        res.status(400).json({ error: 'Invalid or missing verification token' });
     }
 };

@@ -79,13 +79,14 @@ h2 {
   text-align: center;
   background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 1.25rem;
 }
 
 label {
@@ -119,6 +120,7 @@ button {
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.2s, opacity 0.2s;
+  margin-top: 0.5rem;
 }
 
 button:hover {
@@ -138,6 +140,15 @@ button:active {
   padding: 0.75rem;
   border-radius: 8px;
   border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.input-error-label {
+  color: var(--error);
+  font-size: 0.75rem;
+  margin-top: -0.25rem;
+  margin-bottom: 0.25rem;
+  margin-left: 0.5rem;
+  animation: slideUp 0.2s ease-out;
 }
 
 .success-message {

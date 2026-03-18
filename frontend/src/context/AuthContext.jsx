@@ -37,18 +37,40 @@ export const AuthProvider = ({ children }) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
-        return data.message || 'Registration successful';
+        return data.message || 'Verification email sent';
     };
 
-    const resetPassword = async (username, newPassword) => {
-        const res = await fetch('/api/auth/reset-password', {
-            method: 'PATCH',
+    const verifyRegister = async (token) => {
+        const res = await fetch('/api/auth/verify-register', {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, newPassword }),
+            body: JSON.stringify({ token }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        return data; // contains message and username
+    };
+
+    const requestPasswordReset = async (email, newPassword) => {
+        const res = await fetch('/api/auth/request-password-reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, newPassword }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
         return data.message;
+    };
+
+    const verifyPasswordReset = async (token) => {
+        const res = await fetch('/api/auth/verify-reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        return data; // contains message and username
     };
 
     const logout = () => {
@@ -62,7 +84,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, theme, toggleTheme, login, register, resetPassword, logout, loading }}>
+        <AuthContext.Provider value={{ user, token, theme, toggleTheme, login, register, verifyRegister, requestPasswordReset, verifyPasswordReset, logout, loading }}>
             {children}
         </AuthContext.Provider>
     );

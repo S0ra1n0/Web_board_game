@@ -37,6 +37,8 @@ const LoginPage = () => {
                         onChange={(e) => setEmail(e.target.value)}
                         required
                     />
+                    {email.length > 0 && !email.includes('@') && <span className="input-error-label">Email must contain '@'</span>}
+                    
                     <label>Password</label>
                     <input
                         type="password"
