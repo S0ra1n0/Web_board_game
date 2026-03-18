@@ -222,6 +222,140 @@ header {
   margin-bottom: 1rem;
 }
 
+/* HUB LAYOUT: Virtual Console CSS */
+.hub-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr 280px;
+  gap: 2rem;
+  padding: 2rem 4rem;
+  margin-top: 60px; /* offset the absolute header */
+  min-height: calc(100vh - 60px);
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.hub-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  height: 100%;
+}
+
+.hub-center-console {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.console-title {
+  text-align: center;
+  font-size: 2.25rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Base Matrix Color variable depending on theme */
+:root {
+  --matrix-off: rgba(0, 0, 0, 0.05); /* very faint dark in light mode */
+}
+[data-theme='dark'] {
+  --matrix-off: rgba(255, 255, 255, 0.05); /* faint white in dark mode */
+}
+
+.game-matrix-container {
+  padding: 1.5rem;
+  border-radius: 20px;
+  display: inline-block;
+  background: #0b1121; /* Dark casing around the LEDs */
+}
+
+/* In light mode, the matrix casing can be a soft dark to make LEDs pop */
+[data-theme='light'] .game-matrix-container {
+  background: #e2e8f0;
+}
+
+.game-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.matrix-row {
+  display: flex;
+  gap: 4px;
+}
+
+.matrix-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  transition: background-color 0.2s, box-shadow 0.2s;
+  /* subtle inset shadow for depth, simulating an unlit LED */
+  box-shadow: inset 0 0 3px rgba(0,0,0,0.5); 
+}
+
+/* Game Control Panel Buttons */
+.game-controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-radius: 40px;
+  flex-wrap: wrap;
+}
+
+.control-btn {
+  padding: 0.75rem 1.5rem;
+  font-weight: 800;
+  font-size: 0.85rem;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: transform 0.15s, opacity 0.2s, background-color 0.2s;
+  border: 2px solid var(--glass-border);
+}
+
+.control-btn:hover {
+  transform: translateY(-2px);
+  opacity: 0.9;
+}
+
+.control-btn:active {
+  transform: translateY(2px);
+}
+
+.nav-btn {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.action-btn {
+  background: rgba(128, 128, 128, 0.2);
+  color: var(--text-primary);
+}
+
+.enter-btn {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  color: white;
+  border: none;
+  min-width: 100px;
+}
+
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
