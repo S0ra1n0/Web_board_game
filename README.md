@@ -65,6 +65,51 @@ Contains the REST API server, database configurations, routing, and controllers.
 
 ---
 
+## 🚀 Getting Started
+
+### Prerequisites
+Before you begin, ensure you have the following installed:
+- **Node.js** (v18 or higher recommended)
+- **PostgreSQL** database (Local or Hosted like [Supabase](https://supabase.com/))
+
+### Environment Variables
+You will need to create a `.env` file in the root directory to store your environment variables.
+An example file named `.env.example` has been provided.
+
+1. Copy `.env.example` to a new file named `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+2. Fill in the required variables in your `.env` file:
+   - `PORT`: Usually 3000.
+   - `DATABASE_URL`: Your PostgreSQL connection string. If using Supabase, you can find this in your project settings under Database > URI.
+   - `JWT_SECRET`: A secure random string used to sign JSON Web Tokens.
+   - `EMAIL_USER`: Email address used by Nodemailer to send verification/reset emails (e.g., a Gmail address).
+   - `EMAIL_PASS`: App password for the email account. For Gmail, you need to enable 2-Step Verification and generate an "App Password" in your Google Account security settings.
+
+### Installation
+
+1. **Install Backend Dependencies**
+   From the root directory of the project:
+   ```bash
+   npm install
+   ```
+
+2. **Install Frontend Dependencies**
+   Navigate to the frontend folder and install its dependencies:
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+3. **Database Setup**
+   Ensure your PostgreSQL database is running and the `DATABASE_URL` is set correctly in your `.env` file. Then, run the database migrations and optionally the seed script:
+   ```bash
+   # In the root directory
+   npx knex migrate:latest
+   npx knex seed:run
+   ```
+
 ## 🚀 How to Run
 
 You need to run two separate development servers to test the full application.
@@ -72,7 +117,7 @@ You need to run two separate development servers to test the full application.
 ### 1. Backend Server
 From the root directory of the project:
 ```bash
-# Start the Express server to handle APIs and connect to Supabase
+# Start the Express server to handle APIs and connect to the database
 npm run dev
 ```
 *The backend server will run on port 3000.*
@@ -83,7 +128,7 @@ Open a **new, separate terminal tab**, navigate to the frontend folder, and star
 cd frontend
 npm run dev
 ```
-*The Vue server will start on port 5173. Open `http://localhost:5173` in your browser.*
+*The React server will start on port 5173. Open `http://localhost:5173` in your browser.*
 
 ---
 
