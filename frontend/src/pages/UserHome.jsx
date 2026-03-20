@@ -316,32 +316,70 @@ const UserHome = () => {
     const handleHint = () => {
         if (gameOverModal || exitConfirmModal || saveFoundModal || sideSelectionModal || hintModal) return;
         
-        const description = `Welcome to the Retro Game Hub!
+        const gameId = GAMES[gameIndex].id;
+        const gameTitle = GAMES[gameIndex].title;
+        let description = `Welcome to the Retro Game Hub!`;
 
-HOW TO PLAY:
-- Select a game using LEFT / RIGHT arrows.
-- Press ENTER to start or confirm your move.
-- If existing progress is found, you can LOAD it or start a NEW game.
-- NEW GAME: Choose to play as X (First Move) or O (Second Move).
+        if (gameId === 'TICTACTOE') {
+            description = `TIC-TAC-TOE GUIDE
 
-WIN / LOSS CONDITIONS:
-- WIN: Align 3 of your symbols in a row, column, or diagonal.
-- DRAW: The grid is full with no winner.
-- LOSS: The AI completes a line before you do.
+GOAL: Align 3 of your symbols in a row, column, or diagonal to win.
+
+SIDE SELECTION:
+- Start Fresh to pick X or O.
+- X goes first, O goes second.
+
+WIN / LOSS / DRAW:
+- WIN: You align 3 symbols first!
+- DEFEAT: The AI aligns 3 first.
+- DRAW: The 3x3 grid is full with no winner.
 
 SYSTEM FEATURES:
 - SAVE: Use the BACK button mid-game to save your progress.
-- LOAD: Load your last session from the sidebar or upon entry.
-- RANKINGS: Your wins are automatically added to the global leaderboard!
+- LOAD: Resume your last match from the Sidebar or Entry.`;
+        } else if (gameId === 'CARO') {
+            description = `CARO 5 GUIDE (5-IN-A-ROW)
+
+GOAL: Align 5 of your symbols in a continuous line to win.
+
+SIDE SELECTION:
+- Pick X (First) or O (Second) when starting a new game.
+
+WIN / LOSS / DRAW:
+- WIN: You complete a line of 5.
+- DEFEAT: The AI completes a line of 5 first.
+- DRAW: A very rare scenario when the board is full.
+
+SYSTEM FEATURES:
+- SAVE: Your progress is stored when you exit via the BACK button.
+- LOAD: Continue your long-term matches anytime!`;
+        } else if (gameId === 'MEMORY') {
+            description = `MEMORY MATCH GUIDE
+
+GOAL: Flip tiles to find matching pairs and clear the board.
+
+WIN CONDITION:
+- SUCCESS: All pairs found within the time limit.
+- HIGH SCORE: Your fastest completion times are saved to the leaderboard.
+
+SYSTEM FEATURES:
+- PROGRESS: Save your partially cleared board and resume later.
+- RELOAD: The grid and timer state will be restored exactly where you left off.`;
+        } else if (gameId === 'DRAW') {
+            description = `FREE DRAWING GUIDE
+
+GOAL: Use the 20x20 pixel matrix as your digital canvas!
 
 CONTROLS:
-- LEFT / RIGHT: Navigate
-- ENTER: Confirm Action
-- BACK: Exit / Save
-- HINT: Toggle this guide`;
+- NAVIGATE: Use the console arrows to move the brush.
+- DRAW: Press ENTER to toggle a pixel on or off.
+
+SYSTEM FEATURES:
+- PERSISTENCE: Use the SAVE feature to keep your artwork safe for your next session.`;
+        }
         
         setHintModal({
-            title: `Game Hub - Official Guide`,
+            title: `${gameTitle} - Official Guide`,
             description,
             onClose: () => setHintModal(null)
         });
