@@ -1,5 +1,12 @@
 const db = require('../db/db');
 
+exports.getProfile = async (req, res) => {
+    res.json({
+        status: 'success',
+        data: { user: req.user }
+    });
+};
+
 exports.getAllUsers = async (req, res) => {
     try {
         const users = await db('users').select('id', 'username', 'email', 'role', 'created_at');
@@ -107,5 +114,66 @@ exports.getLeaderboard = async (req, res) => {
     } catch (error) {
         console.error('Database error fetching leaderboard:', error);
         res.status(500).json({ error: 'Failed to fetch leaderboard' });
+    }
+};
+
+exports.saveGameProgress = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { game_id, game_state } = req.body;
+        
+        if (!game_id || !game_state) {
+            return res.status(400).json({ error: 'Missing game_id or game_state' });
+        }
+
+        const upsertQuery = `
+            INSERT INTO saved_games (user_id, game_id, game_state, updated_at)
+            VALUES (?, ?, ?::json, NOW())
+            ON CONFLICT (user_id, game_id)
+            DO UPDATE SET game_state = EXCLUDED.game_state, updated_at = NOW()
+            RETURNING *;
+        `;
+        
+        const result = await db.raw(upsertQuery, [userId, game_id, JSON.stringify(game_state)]);
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Database error saving progress:', error);
+        res.status(500).json({ error: 'Failed to save game progress' });
+    }
+};
+
+exports.loadGameProgress = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { game_id } = req.params;
+        
+        const progress = await db('saved_games')
+            .where({ user_id: userId, game_id })
+            .first();
+            
+        if (!progress) {
+            return res.status(404).json({ message: 'No saved progress found' });
+        }
+        
+        res.json(progress);
+    } catch (error) {
+        console.error('Database error loading progress:', error);
+        res.status(500).json({ error: 'Failed to load game progress' });
+    }
+};
+
+exports.deleteGameProgress = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { game_id } = req.params;
+        
+        await db('saved_games')
+            .where({ user_id: userId, game_id })
+            .del();
+            
+        res.json({ message: 'Saved progress deleted successfully' });
+    } catch (error) {
+        console.error('Database error deleting progress:', error);
+        res.status(500).json({ error: 'Failed to delete game progress' });
     }
 };

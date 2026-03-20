@@ -21,6 +21,11 @@ const UserHome = () => {
     const [mode, setMode] = useState('MENU');
     const [gameIndex, setGameIndex] = useState(0);
     const [gameOverModal, setGameOverModal] = useState(null);
+    const [exitConfirmModal, setExitConfirmModal] = useState(null);
+    const [saveFoundModal, setSaveFoundModal] = useState(null);
+    const [sideSelectionModal, setSideSelectionModal] = useState(null);
+    const [hintModal, setHintModal] = useState(null);
+    const [progressMetadata, setProgressMetadata] = useState({}); // { GAME_ID: updated_at }
 
     // Stats fetched from database
     const [stats, setStats] = useState({ 
@@ -31,24 +36,40 @@ const UserHome = () => {
 
     useEffect(() => {
         if (!token) return;
-        const fetchStats = async () => {
+        const fetchUserData = async () => {
             try {
-                const res = await fetch('/api/users/stats', {
+                // Fetch Stats
+                const statsRes = await fetch('/api/users/stats', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                if (res.ok) {
-                    const data = await res.json();
+                if (statsRes.ok) {
+                    const data = await statsRes.json();
                     setStats({
                         CARO: { wins: data.caro_wins },
                         TICTACTOE: { wins: data.tictactoe_wins },
                         MEMORY: { highScore: data.memory_highscore }
                     });
                 }
+
+                // Fetch Game Progress Metadata (Timestamps)
+                // We'll just fetch all saves for the user
+                GAMES.forEach(async (game) => {
+                    const res = await fetch(`/api/users/load-game/${game.id}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        setProgressMetadata(prev => ({
+                            ...prev,
+                            [game.id]: data.updated_at
+                        }));
+                    }
+                });
             } catch (error) {
-                console.error('Failed to fetch stats:', error);
+                console.error('Failed to fetch user data:', error);
             }
         };
-        fetchStats();
+        fetchUserData();
     }, [token]);
 
     const saveStats = async (gameId, statType, value, updateUILater = false) => {
@@ -80,68 +101,250 @@ const UserHome = () => {
         return newStats;
     };
 
-    // Call game hooks unconditionally (React rules), handle interaction conditionally
-    const handleGameOver = async (winner) => {
-        let resultText = winner === 'DRAW' ? 'Draw' : winner === 'X' ? 'Victory!' : 'Defeat';
-        let latestStats = stats;
+    const handleSave = async () => {
+        const gameId = GAMES[gameIndex].id;
+        let gameState = null;
         
-        if (winner === 'X') {
-            latestStats = await saveStats('TICTACTOE', 'win', 1, true); // true = defer UI update
+        if (mode === 'PLAYING_TICTACTOE') {
+            gameState = ticTacToeGame.getState();
         }
 
+        if (!gameState) return;
+
+        try {
+            const res = await fetch('/api/users/save-game', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ game_id: gameId, game_state: gameState })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setProgressMetadata(prev => ({
+                    ...prev,
+                    [gameId]: data.updated_at
+                }));
+                alert('Game progress saved!');
+            }
+        } catch (error) {
+            console.error('Failed to save game:', error);
+        }
+    };
+
+    const handleLoad = async () => {
+        const gameId = GAMES[gameIndex].id;
+        try {
+            const res = await fetch(`/api/users/load-game/${gameId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (mode === `PLAYING_${gameId}`) {
+                    if (gameId === 'TICTACTOE') ticTacToeGame.loadState(data.game_state);
+                } else {
+                    // If loading from menu, enter the game first
+                    setMode(`PLAYING_${gameId}`);
+                    setTimeout(() => {
+                        if (gameId === 'TICTACTOE') ticTacToeGame.loadState(data.game_state);
+                    }, 100);
+                }
+                // Delete save data after loading to prevent "Undo Cheating"
+                await deleteProgress(gameId);
+            } else {
+                alert('No saved progress found for this game.');
+            }
+        } catch (error) {
+            console.error('Failed to load game:', error);
+        }
+    };
+
+    const deleteProgress = async (gameId) => {
+        try {
+            await fetch(`/api/users/delete-game/${gameId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            setProgressMetadata(prev => {
+                const NewMeta = { ...prev };
+                delete NewMeta[gameId];
+                return NewMeta;
+            });
+        } catch (error) {
+            console.error('Failed to delete progress:', error);
+        }
+    };
+
+    // Call game hooks unconditionally (React rules), handle interaction conditionally
+    const handleGameOver = (winner) => {
+        const gameId = GAMES[gameIndex].id;
+        const isWin = winner === ticTacToeGame.playerSide;
+        
+        // 1. Show modal IMMEDIATELY (no awaits before this)
+        const resultText = winner === 'DRAW' ? 'Draw' : isWin ? 'Victory!' : 'Defeat';
+        
         setGameOverModal({
             title: resultText,
-            statsText: `Total Wins: ${latestStats.TICTACTOE.wins}`,
+            statsText: `Loading stats...`, // Update this shortly after
             onPlayAgain: () => {
-                if (winner === 'X') setStats(latestStats); // update leaderboard now
                 setGameOverModal(null);
-                ticTacToeGame.reset();
+                triggerSideSelection(gameId);
             },
             onQuit: () => {
-                if (winner === 'X') setStats(latestStats); // update leaderboard now
                 setGameOverModal(null);
                 setMode('MENU');
             }
         });
+
+        // 2. Perform background tasks (delete progress, save stats)
+        deleteProgress(gameId); 
+
+        if (isWin) {
+            saveStats('TICTACTOE', 'win', 1, true).then(latestStats => {
+                // Update the already open modal with latest stats
+                setGameOverModal(prev => prev ? {
+                    ...prev,
+                    statsText: `Total Wins: ${latestStats.TICTACTOE.wins}`,
+                    onPlayAgain: () => {
+                        setStats(latestStats);
+                        setGameOverModal(null);
+                        triggerSideSelection(gameId);
+                    },
+                    onQuit: () => {
+                        setStats(latestStats);
+                        setGameOverModal(null);
+                        setMode('MENU');
+                    }
+                } : null);
+            });
+        } else {
+            setGameOverModal(prev => prev ? {
+                ...prev,
+                statsText: `Total Wins: ${stats.TICTACTOE.wins}`
+            } : null);
+        }
     };
 
     const ticTacToeGame = useTicTacToe({ onGameOver: handleGameOver });
 
     const handleLeft = () => {
-        if (gameOverModal) return;
+        if (gameOverModal || exitConfirmModal || saveFoundModal || sideSelectionModal || hintModal) return;
         if (mode === 'MENU') setGameIndex(prev => (prev === 0 ? GAMES.length - 1 : prev - 1));
         else if (mode === 'PLAYING_TICTACTOE') ticTacToeGame.handleLeft();
     };
 
     const handleRight = () => {
-        if (gameOverModal) return;
+        if (gameOverModal || exitConfirmModal || saveFoundModal || sideSelectionModal || hintModal) return;
         if (mode === 'MENU') setGameIndex(prev => (prev === GAMES.length - 1 ? 0 : prev + 1));
         else if (mode === 'PLAYING_TICTACTOE') ticTacToeGame.handleRight();
     };
 
+    // Helper to start the game after side selection
+    const startNewGame = (gameId, side) => {
+        setMode(`PLAYING_${gameId}`);
+        if (gameId === 'TICTACTOE') {
+            ticTacToeGame.reset(side);
+        }
+        setSideSelectionModal(null);
+    };
+
+    const triggerSideSelection = (gameId) => {
+        setSideSelectionModal({
+            onSelect: (side) => startNewGame(gameId, side),
+            onCancel: () => setSideSelectionModal(null)
+        });
+    };
+
     const handleEnter = () => {
-        if (gameOverModal) return;
+        if (gameOverModal || exitConfirmModal || saveFoundModal || sideSelectionModal || hintModal) return;
         if (mode === 'MENU') {
+            const gameId = GAMES[gameIndex].id;
             if (!GAMES[gameIndex].available) return;
-            setMode(`PLAYING_${GAMES[gameIndex].id}`);
-            if (GAMES[gameIndex].id === 'TICTACTOE') {
-                ticTacToeGame.reset();
+
+            // Check if there's a save for this game
+            if (progressMetadata[gameId]) {
+                setSaveFoundModal({
+                    gameId,
+                    onLoad: () => {
+                        handleLoad();
+                        setSaveFoundModal(null);
+                    },
+                    onCreateNew: async () => {
+                        await deleteProgress(gameId);
+                        setSaveFoundModal(null);
+                        triggerSideSelection(gameId);
+                    },
+                    onCancel: () => setSaveFoundModal(null)
+                });
+                return;
             }
+
+            triggerSideSelection(gameId);
         }
         else if (mode === 'PLAYING_TICTACTOE') ticTacToeGame.handleEnter();
     };
 
     const handleBack = () => {
-        if (gameOverModal) return;
+        if (gameOverModal || exitConfirmModal || saveFoundModal || sideSelectionModal || hintModal) return;
         if (mode !== 'MENU') {
-            const confirmLeave = window.confirm('Are you sure you want to leave the active game?');
-            if(confirmLeave) setMode('MENU');
+            // Only prompt to save if moves were actually made in this session
+            if (!ticTacToeGame.isDirty) {
+                setMode('MENU');
+                return;
+            }
+
+            setExitConfirmModal({
+                title: 'Save progress and exit?',
+                desc: 'If you select Discard, your current session will be lost permanently.',
+                onSave: async () => {
+                    await handleSave();
+                    setExitConfirmModal(null);
+                    setMode('MENU');
+                },
+                onDiscard: async () => {
+                    const gameId = GAMES[gameIndex].id;
+                    await deleteProgress(gameId);
+                    setExitConfirmModal(null);
+                    setMode('MENU');
+                },
+                onCancel: () => setExitConfirmModal(null)
+            });
         }
     };
 
     const handleHint = () => {
-        if (gameOverModal) return;
-        alert(mode === 'MENU' ? `How to play: ${GAMES[gameIndex].title}` : `In-game Hint/Instructions!`);
+        if (gameOverModal || exitConfirmModal || saveFoundModal || sideSelectionModal || hintModal) return;
+        
+        const description = `Welcome to the Retro Game Hub!
+
+HOW TO PLAY:
+- Select a game using LEFT / RIGHT arrows.
+- Press ENTER to start or confirm your move.
+- If existing progress is found, you can LOAD it or start a NEW game.
+- NEW GAME: Choose to play as X (First Move) or O (Second Move).
+
+WIN / LOSS CONDITIONS:
+- WIN: Align 3 of your symbols in a row, column, or diagonal.
+- DRAW: The grid is full with no winner.
+- LOSS: The AI completes a line before you do.
+
+SYSTEM FEATURES:
+- SAVE: Use the BACK button mid-game to save your progress.
+- LOAD: Load your last session from the sidebar or upon entry.
+- RANKINGS: Your wins are automatically added to the global leaderboard!
+
+CONTROLS:
+- LEFT / RIGHT: Navigate
+- ENTER: Confirm Action
+- BACK: Exit / Save
+- HINT: Toggle this guide`;
+        
+        setHintModal({
+            title: `Game Hub - Official Guide`,
+            description,
+            onClose: () => setHintModal(null)
+        });
     };
 
     // Determine what to show on the matrix
@@ -169,21 +372,6 @@ const UserHome = () => {
 
                 <div style={{ position: 'relative' }}>
                     <GameMatrix gridPixels={currentGridPixels} />
-                    
-                    {gameOverModal && (
-                        <div className="glass-panel" style={{ 
-                            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                            zIndex: 10, textAlign: 'center', background: 'var(--bg-primary)', minWidth: '300px',
-                            boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
-                        }}>
-                            <h2 style={{ fontSize: '2rem' }}>{gameOverModal.title}</h2>
-                            <h3 style={{ margin: '1rem 0', color: 'var(--text-secondary)' }}>{gameOverModal.statsText}</h3>
-                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-                                <button onClick={gameOverModal.onPlayAgain} className="control-btn enter-btn" style={{flex: 1}}>Play Again</button>
-                                <button onClick={gameOverModal.onQuit} className="control-btn action-btn" style={{flex: 1}}>Quit</button>
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 <GameControls 
@@ -202,7 +390,132 @@ const UserHome = () => {
                 )}
             </div>
 
-            <StatsSidebar activeGame={GAMES[gameIndex]} userStats={stats} />
+            <StatsSidebar 
+                activeGame={GAMES[gameIndex]} 
+                userStats={stats} 
+                lastSaveTime={progressMetadata[GAMES[gameIndex].id] ? new Date(progressMetadata[GAMES[gameIndex].id]).toLocaleString() : 'None'}
+                onSave={handleSave}
+                onLoad={handleLoad}
+            />
+
+            {gameOverModal && (
+                <div className="modal-overlay" style={{
+                    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+                    backgroundColor: 'var(--modal-overlay-bg)', 
+                    backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+                    zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center'
+                }}>
+                    <div className="glass-panel" style={{ 
+                        textAlign: 'center', background: 'var(--bg-primary)', 
+                        minWidth: '450px', padding: '3rem', borderRadius: '24px',
+                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.7)',
+                        transform: 'scale(1.05)'
+                    }}>
+                        <h2 style={{ fontSize: '3rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>{gameOverModal.title}</h2>
+                        <h3 style={{ fontSize: '1.5rem', margin: '1rem 0', color: 'var(--accent-primary)' }}>{gameOverModal.statsText}</h3>
+                        <div style={{ display: 'flex', gap: '1.5rem', marginTop: '2.5rem' }}>
+                            <button onClick={gameOverModal.onPlayAgain} className="control-btn enter-btn" style={{flex: 1, padding: '1rem', fontSize: '1.1rem'}}>Play Again</button>
+                            <button onClick={gameOverModal.onQuit} className="control-btn action-btn" style={{flex: 1, padding: '1rem', fontSize: '1.1rem'}}>Quit</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {exitConfirmModal && (
+                <div className="modal-overlay" style={{
+                    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+                    backgroundColor: 'var(--modal-overlay-bg)', 
+                    backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+                    zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center'
+                }}>
+                    <div className="glass-panel" style={{ 
+                        textAlign: 'center', background: 'var(--bg-primary)', 
+                        minWidth: '450px', padding: '2.5rem', borderRadius: '24px',
+                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.7)'
+                    }}>
+                        <h2 style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>{exitConfirmModal.title}</h2>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>{exitConfirmModal.desc}</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <button onClick={exitConfirmModal.onSave} className="control-btn enter-btn" style={{padding: '1rem', fontSize: '1.1rem'}}>Save and Exit</button>
+                            <button onClick={exitConfirmModal.onDiscard} className="control-btn action-btn" style={{padding: '1rem', fontSize: '1.1rem'}}>Exit & Discard Progress</button>
+                            <button onClick={exitConfirmModal.onCancel} className="control-btn nav-btn" style={{padding: '0.75rem', fontSize: '0.9rem', marginTop: '0.5rem'}}>Keep Playing</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {saveFoundModal && (
+                <div className="modal-overlay" style={{
+                    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+                    backgroundColor: 'var(--modal-overlay-bg)', 
+                    backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+                    zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center'
+                }}>
+                    <div className="glass-panel" style={{ 
+                        textAlign: 'center', background: 'var(--bg-primary)', 
+                        minWidth: '450px', padding: '2.5rem', borderRadius: '24px',
+                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.7)'
+                    }}>
+                        <h2 style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>Existing Progress Found</h2>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>A saved session exists for this game. Starting a new game will delete the current save.</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <button onClick={saveFoundModal.onLoad} className="control-btn enter-btn" style={{padding: '1rem', fontSize: '1.1rem'}}>Load Saved Game</button>
+                            <button onClick={saveFoundModal.onCreateNew} className="control-btn action-btn" style={{padding: '1rem', fontSize: '1.1rem'}}>Start New Game (Delete Save)</button>
+                            <button onClick={saveFoundModal.onCancel} className="control-btn nav-btn" style={{padding: '0.75rem', fontSize: '0.9rem', marginTop: '0.5rem'}}>Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {sideSelectionModal && (
+                <div className="modal-overlay" style={{
+                    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+                    backgroundColor: 'var(--modal-overlay-bg)', 
+                    backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+                    zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center'
+                }}>
+                    <div className="glass-panel" style={{ 
+                        textAlign: 'center', background: 'var(--bg-primary)', 
+                        minWidth: '450px', padding: '2.5rem', borderRadius: '24px',
+                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.7)'
+                    }}>
+                        <h2 style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>Pick Your Side</h2>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>X goes first, O goes second.</p>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button onClick={() => sideSelectionModal.onSelect('X')} className="control-btn enter-btn" style={{flex: 1, padding: '1.5rem', fontSize: '1.5rem', fontWeight: 'bold'}}>PLAY AS X</button>
+                            <button onClick={() => sideSelectionModal.onSelect('O')} className="control-btn action-btn" style={{flex: 1, padding: '1.5rem', fontSize: '1.5rem', fontWeight: 'bold'}}>PLAY AS O</button>
+                        </div>
+                        <button onClick={sideSelectionModal.onCancel} className="control-btn nav-btn" style={{width: '100%', padding: '0.75rem', fontSize: '0.9rem', marginTop: '1.5rem'}}>Cancel</button>
+                    </div>
+                </div>
+            )}
+
+            {hintModal && (
+                <div className="modal-overlay" style={{
+                    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+                    backgroundColor: 'var(--modal-overlay-bg)', 
+                    backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+                    zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center'
+                }}>
+                    <div className="glass-panel" style={{ 
+                        textAlign: 'center', background: 'var(--bg-primary)', 
+                        minWidth: '450px', padding: '2.5rem', borderRadius: '24px',
+                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.7)'
+                    }}>
+                        <h2 style={{ fontSize: '2.2rem', marginBottom: '1.5rem' }}>{hintModal.title}</h2>
+                        <div style={{ 
+                            color: 'var(--text-secondary)', 
+                            marginBottom: '2rem', 
+                            textAlign: 'left',
+                            whiteSpace: 'pre-line',
+                            lineHeight: '1.6'
+                        }}>
+                            {hintModal.description}
+                        </div>
+                        <button onClick={hintModal.onClose} className="control-btn nav-btn" style={{width: '100%', padding: '1rem', fontSize: '1.1rem'}}>Close Guide</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -2,13 +2,34 @@ const GRID_SIZE = 20;
 
 const createEmptyGrid = () => Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(null));
 
-// Caro 5: a 6-in-a-line to perfectly center on a 20x20 grid (center is 9.5)
 export const getCaroArt = () => {
     const grid = createEmptyGrid();
-    const color = '#22c55e'; 
-    for(let i=7; i<=12; i++) {
-        grid[i][i] = color;
-    }
+    const colorX = '#ef4444'; 
+    const colorO = '#3b82f6';
+    const color5 = '#22c55e';
+
+    // Small X (Top Left)
+    grid[3][3]=colorX; grid[3][6]=colorX;
+    grid[4][4]=colorX; grid[4][5]=colorX;
+    grid[5][4]=colorX; grid[5][5]=colorX;
+    grid[6][3]=colorX; grid[6][6]=colorX;
+
+    // Small O (Top Right)
+    grid[3][13]=colorO; grid[3][14]=colorO;
+    grid[4][12]=colorO; grid[4][15]=colorO;
+    grid[5][12]=colorO; grid[5][15]=colorO;
+    grid[6][13]=colorO; grid[6][14]=colorO;
+
+    // Number 5 (Bottom Center)
+    for(let i=7; i<=11; i++) grid[10][i] = color5; // Top
+    grid[11][7] = color5;
+    grid[12][7] = color5;
+    for(let i=7; i<=11; i++) grid[13][i] = color5; // Mid
+    grid[14][11] = color5;
+    grid[15][11] = color5;
+    grid[16][11] = color5;
+    for(let i=7; i<=10; i++) grid[17][i] = color5; // Bot
+    
     return grid;
 };
 

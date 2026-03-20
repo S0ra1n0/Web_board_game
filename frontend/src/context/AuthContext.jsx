@@ -13,6 +13,38 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('theme', theme);
     }, [theme]);
 
+    const logout = () => {
+        setUser(null);
+        setToken(null);
+        localStorage.removeItem('token');
+    };
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            if (!token) {
+                setLoading(false);
+                return;
+            }
+            try {
+                const res = await fetch('/api/users/profile', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setUser(data.data.user);
+                } else {
+                    logout();
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                logout();
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchUser();
+    }, [token]);
+
     const login = async (email, password) => {
         const res = await fetch('/api/auth/login', {
             method: 'POST',
@@ -71,12 +103,6 @@ export const AuthProvider = ({ children }) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
         return data; // contains message and username
-    };
-
-    const logout = () => {
-        setUser(null);
-        setToken(null);
-        localStorage.removeItem('token');
     };
 
     const toggleTheme = () => {
