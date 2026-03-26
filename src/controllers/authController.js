@@ -2,6 +2,8 @@ const db = require('../db/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+const getAppOrigin = () => process.env.APP_ORIGIN || 'http://localhost:5173';
+
 const signToken = (id, role) => {
     return jwt.sign({ id, role }, process.env.JWT_SECRET, {
         expiresIn: '1d'
@@ -48,7 +50,7 @@ exports.register = async (req, res) => {
             { expiresIn: '15m' }
         );
 
-        const verificationLink = `http://localhost:5173/verify-register/${registerToken}`;
+        const verificationLink = `${getAppOrigin()}/verify-register/${registerToken}`;
         const message = `Please click the following link to verify and create your account:\n\n${verificationLink}\n\nIf you didn't request this, please ignore this email.`;
 
         try {
@@ -172,7 +174,7 @@ exports.requestPasswordReset = async (req, res) => {
             { expiresIn: '10m' }
         );
 
-        const verificationLink = `http://localhost:5173/verify-reset/${resetToken}`;
+        const verificationLink = `${getAppOrigin()}/verify-reset/${resetToken}`;
         const message = `Please click the following link to verify your password reset:\n\n${verificationLink}\n\nIf you didn't request this, please ignore this email.`;
 
         try {

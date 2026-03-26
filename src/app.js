@@ -7,11 +7,15 @@ app.use(express.json());
 
 // Routes
 const authRoutes = require('./routes/authRoutes');
+const profileRoutes = require('./routes/profileRoutes');
+const userSearchRoutes = require('./routes/userSearchRoutes');
 const userRoutes = require('./routes/userRoutes');
 
 const adminRoutes = require('./routes/adminRoutes');
 
 app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/users', userSearchRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 
