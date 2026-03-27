@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import SocialSidebar from '../components/hub/SocialSidebar';
-import StatsSidebar from '../components/hub/StatsSidebar';
 import GameMatrix from '../components/hub/GameMatrix';
 import GameControls from '../components/hub/GameControls';
 import { getCaroArt, getTicTacToeArt, getMemoryArt, getDrawArt } from '../utils/pixelArt';
@@ -16,10 +14,12 @@ const GAMES = [
     { id: 'DRAW', title: 'Free Drawing Board', render: getDrawArt, available: false }
 ];
 
+const FIRST_AVAILABLE_INDEX = GAMES.findIndex((game) => game.available);
+
 const UserHome = () => {
-    const { user, token } = useAuth();
+    const { token } = useAuth();
     const [mode, setMode] = useState('MENU');
-    const [gameIndex, setGameIndex] = useState(0);
+    const [gameIndex, setGameIndex] = useState(FIRST_AVAILABLE_INDEX === -1 ? 0 : FIRST_AVAILABLE_INDEX);
     const [gameOverModal, setGameOverModal] = useState(null);
     const [exitConfirmModal, setExitConfirmModal] = useState(null);
     const [saveFoundModal, setSaveFoundModal] = useState(null);
@@ -240,6 +240,16 @@ const UserHome = () => {
         else if (mode === 'PLAYING_TICTACTOE') ticTacToeGame.handleRight();
     };
 
+    const handleUp = () => {
+        if (gameOverModal || exitConfirmModal || saveFoundModal || sideSelectionModal || hintModal) return;
+        if (mode === 'PLAYING_TICTACTOE') ticTacToeGame.handleUp();
+    };
+
+    const handleDown = () => {
+        if (gameOverModal || exitConfirmModal || saveFoundModal || sideSelectionModal || hintModal) return;
+        if (mode === 'PLAYING_TICTACTOE') ticTacToeGame.handleDown();
+    };
+
     // Helper to start the game after side selection
     const startNewGame = (gameId, side) => {
         setMode(`PLAYING_${gameId}`);
@@ -260,7 +270,12 @@ const UserHome = () => {
         if (gameOverModal || exitConfirmModal || saveFoundModal || sideSelectionModal || hintModal) return;
         if (mode === 'MENU') {
             const gameId = GAMES[gameIndex].id;
-            if (!GAMES[gameIndex].available) return;
+            if (!GAMES[gameIndex].available) {
+                if (FIRST_AVAILABLE_INDEX !== -1) {
+                    setGameIndex(FIRST_AVAILABLE_INDEX);
+                }
+                return;
+            }
 
             // Check if there's a save for this game
             if (progressMetadata[gameId]) {
@@ -395,22 +410,29 @@ SYSTEM FEATURES:
         currentGridPixels = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(null));
     }
 
+    const activeGame = GAMES[gameIndex];
+    const isMenuMode = mode === 'MENU';
+    const currentSaveText = progressMetadata[activeGame.id]
+        ? new Date(progressMetadata[activeGame.id]).toLocaleString()
+        : 'No save';
+
+    const stageInstruction = isMenuMode
+        ? 'SELECT GAME (LEFT/RIGHT -> ENTER)'
+        : 'MOVE (UP/DOWN/LEFT/RIGHT -> ENTER)';
+
+    let playerStatText = 'Free play';
+    if (activeGame.id === 'TICTACTOE') playerStatText = `${stats.TICTACTOE.wins} total wins`;
+    if (activeGame.id === 'CARO') playerStatText = `${stats.CARO.wins} total wins`;
+    if (activeGame.id === 'MEMORY') playerStatText = `${stats.MEMORY.highScore} best score`;
+
     return (
-        <div className="hub-layout">
-            <SocialSidebar />
+        <div className="video-hub-shell">
+            <div className="video-stage">
+                <GameMatrix
+                    gridPixels={currentGridPixels}
+                    showSideIndicators={isMenuMode}
+                />
 
-            <div className="hub-center-console" style={{ position: 'relative' }}>
-                <h1 className="console-title">{mode === 'MENU' ? GAMES[gameIndex].title : `Playing ${GAMES[gameIndex].title}`}</h1>
-                
-                {mode === 'MENU' && (
-                    <div style={{ color: GAMES[gameIndex].available ? 'var(--success)' : 'var(--error)', fontWeight: 'bold' }}>
-                        {GAMES[gameIndex].available ? 'Available' : 'Unavailable'}
-                    </div>
-                )}
-
-                <div style={{ position: 'relative' }}>
-                    <GameMatrix gridPixels={currentGridPixels} />
-                </div>
 
                 <GameControls 
                     onLeft={handleLeft}
@@ -418,23 +440,22 @@ SYSTEM FEATURES:
                     onEnter={handleEnter}
                     onBack={handleBack}
                     onHint={handleHint}
+                    onUp={handleUp}
+                    onDown={handleDown}
+                    showDirectionalPad={!isMenuMode}
                 />
-                
-                {mode === 'MENU' && (
-                    <div style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
-                        <p>Use <strong>LEFT / RIGHT</strong> to select a game.</p>
-                        <p>Press <strong>ENTER</strong> to start playing.</p>
-                    </div>
-                )}
-            </div>
 
-            <StatsSidebar 
-                activeGame={GAMES[gameIndex]} 
-                userStats={stats} 
-                lastSaveTime={progressMetadata[GAMES[gameIndex].id] ? new Date(progressMetadata[GAMES[gameIndex].id]).toLocaleString() : 'None'}
-                onSave={handleSave}
-                onLoad={handleLoad}
-            />
+                <div className="video-stage-caption">{stageInstruction}</div>
+
+                <div className="video-stage-meta">
+                    <span className="video-meta-chip">{activeGame.title}</span>
+                    <span className={`video-meta-chip ${activeGame.available ? 'video-meta-chip-success' : 'video-meta-chip-danger'}`}>
+                        {activeGame.available ? 'AVAILABLE' : 'UNAVAILABLE'}
+                    </span>
+                    <span className="video-meta-chip">SAVE: {currentSaveText}</span>
+                    <span className="video-meta-chip">STATS: {playerStatText}</span>
+                </div>
+            </div>
 
             {gameOverModal && (
                 <div className="modal-overlay" style={{
