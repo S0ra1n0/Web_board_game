@@ -13,6 +13,9 @@ import AdminLayout from './layouts/AdminLayout';
 import HubPage from './pages/client/HubPage';
 import ProfilePage from './pages/client/ProfilePage';
 import UsersPage from './pages/client/UsersPage';
+import FriendsPage from './pages/client/FriendsPage';
+import MessagesPage from './pages/client/MessagesPage';
+import AchievementsPage from './pages/client/AchievementsPage';
 
 const LoadingScreen = () => (
     <div className="auth-container">
@@ -62,6 +65,9 @@ const App = () => (
                         <Route path="/hub" element={<HubPage />} />
                         <Route path="/profile" element={<ProfilePage />} />
                         <Route path="/users" element={<UsersPage />} />
+                        <Route path="/friends" element={<FriendsPage />} />
+                        <Route path="/messages" element={<MessagesPage />} />
+                        <Route path="/achievements" element={<AchievementsPage />} />
                         <Route path="/user" element={<Navigate to="/hub" replace />} />
                     </Route>
                 </Route>

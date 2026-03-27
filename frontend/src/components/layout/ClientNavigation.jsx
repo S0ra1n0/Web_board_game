@@ -5,6 +5,9 @@ const links = [
     { to: '/hub', label: 'Game Hub' },
     { to: '/profile', label: 'Profile' },
     { to: '/users', label: 'Find Users' },
+    { to: '/friends', label: 'Friends' },
+    { to: '/messages', label: 'Messages' },
+    { to: '/achievements', label: 'Achievements' },
 ];
 
 const ClientNavigation = () => {

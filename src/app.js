@@ -10,6 +10,9 @@ const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const userSearchRoutes = require('./routes/userSearchRoutes');
 const userRoutes = require('./routes/userRoutes');
+const friendRoutes = require('./routes/friendRoutes');
+const messageRoutes = require('./routes/messageRoutes');
+const achievementRoutes = require('./routes/achievementRoutes');
 
 const adminRoutes = require('./routes/adminRoutes');
 
@@ -17,6 +20,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/users', userSearchRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/friends', friendRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/achievements', achievementRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Health check endpoint

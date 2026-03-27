@@ -63,17 +63,17 @@ Every required game must satisfy all items below:
 ## User Features
 - [x] Profile management exists
 - [x] User search exists
-- [ ] Friend management exists
-- [ ] Messaging exists without requiring real-time transport
-- [ ] Achievements exist
+- [x] Friend management exists
+- [x] Messaging exists without requiring real-time transport
+- [x] Achievements exist
 - [ ] Rankings exist
 - [ ] Rankings can filter by game
 - [ ] Rankings can filter by global scope
 - [ ] Rankings can filter by friends scope
 - [ ] Rankings can filter by personal scope
-- [ ] Friends list has pagination
+- [x] Friends list has pagination
 - [ ] Rankings have pagination
-- [ ] Messages have pagination
+- [x] Messages have pagination
 - [ ] Game rating exists
 - [ ] Game comment exists
 
@@ -98,10 +98,10 @@ Every required game must satisfy all items below:
 ## Seeded Demo Scenarios
 - [x] Seeded users have profile data
 - [ ] Seeded users have rankings/stats
-- [ ] Seeded users have friend relationships
-- [ ] Seeded users have pending friend requests
-- [ ] Seeded users have messages
-- [ ] Seeded users have achievements
+- [x] Seeded users have friend relationships
+- [x] Seeded users have pending friend requests
+- [x] Seeded users have messages
+- [x] Seeded users have achievements
 - [ ] Seeded users have saved games
 - [ ] Seeded users have ratings/comments
 - [ ] Seeded admin account can show admin dashboard meaningfully
@@ -114,8 +114,8 @@ Every required game must satisfy all items below:
 - [x] User can read help for games
 - [ ] User can rate and comment on a game
 - [x] User can search another user
-- [ ] User can send a friend request
-- [ ] User can send a message
+- [x] User can send a friend request
+- [x] User can send a message
 - [ ] User can view rankings in all scopes
 - [ ] Admin can log in and manage users
 - [ ] Admin can view statistics
