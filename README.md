@@ -73,19 +73,23 @@ Before you begin, ensure you have the following installed:
 - **PostgreSQL** database (Local or Hosted like [Supabase](https://supabase.com/))
 
 ### Environment Variables
-You will need to create a `.env` file in the root directory to store your environment variables.
-An example file named `.env.example` has been provided.
+You will need to create `.env` files in both the root and frontend directories.
+Example files (`.env.example`) have been provided for both.
 
-1. Copy `.env.example` to a new file named `.env`:
+#### 1. Backend (.env)
+1. Copy `.env.example` to a new file named `.env` in the root:
    ```bash
    cp .env.example .env
    ```
-2. Fill in the required variables in your `.env` file:
-   - `PORT`: Usually 3000.
-   - `DATABASE_URL`: Your PostgreSQL connection string. If using Supabase, you can find this in your project settings under Database > URI.
-   - `JWT_SECRET`: A secure random string used to sign JSON Web Tokens.
-   - `EMAIL_USER`: Email address used by Nodemailer to send verification/reset emails (e.g., a Gmail address).
-   - `EMAIL_PASS`: App password for the email account. For Gmail, you need to enable 2-Step Verification and generate an "App Password" in your Google Account security settings.
+2. Fill in the required variables (DATABASE_URL, JWT_SECRET, EMAIL_USER/PASS).
+
+#### 2. Frontend (frontend/.env)
+1. Navigate to the frontend directory and copy its `.env.example`:
+   ```bash
+   cd frontend
+   cp .env.example .env
+   ```
+2. By default, it uses `http://localhost:3000` for the API. You can update `VITE_API_URL` if your backend is running on a different port.
 
 ### Installation
 
