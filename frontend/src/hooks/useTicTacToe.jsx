@@ -89,7 +89,10 @@ export const useTicTacToe = ({ onGameOver }) => {
         if (foundWinner) {
             setWinner(foundWinner);
             const timer = setTimeout(() => {
-                onGameOverRef.current(foundWinner);
+                const resultFlag = foundWinner === 'DRAW' ? 'DRAW' : (foundWinner === playerSide ? 'WIN' : 'DEFEAT');
+                const mockScore = foundWinner === playerSide ? 100 : 0;
+                const mockDuration = 45; // 45s mock time
+                onGameOverRef.current(resultFlag, mockScore, mockDuration);
             }, 300);
             return () => clearTimeout(timer);
         }

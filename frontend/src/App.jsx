@@ -11,6 +11,7 @@ import PublicLayout from './layouts/PublicLayout';
 import ClientLayout from './layouts/ClientLayout';
 import AdminLayout from './layouts/AdminLayout';
 import HubPage from './pages/client/HubPage';
+import GamePage from './pages/client/GamePage';
 import ProfilePage from './pages/client/ProfilePage';
 import UsersPage from './pages/client/UsersPage';
 
@@ -60,6 +61,7 @@ const App = () => (
                 <Route element={<ProtectedRoute role="user" />}>
                     <Route element={<ClientLayout />}>
                         <Route path="/hub" element={<HubPage />} />
+                        <Route path="/games/:id" element={<GamePage />} />
                         <Route path="/profile" element={<ProfilePage />} />
                         <Route path="/users" element={<UsersPage />} />
                         <Route path="/user" element={<Navigate to="/hub" replace />} />
