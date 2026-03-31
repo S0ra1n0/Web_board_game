@@ -2,7 +2,12 @@ const db = require('../db/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const getAppOrigin = () => process.env.APP_ORIGIN || 'http://localhost:5173';
+const getAppOrigin = () => (process.env.APP_ORIGIN || 'http://localhost:5173').replace(/\/+$/, '');
+
+const buildVerificationLink = (path, token) =>
+    `${getAppOrigin()}${path}/${encodeURIComponent(token)}`;
+
+const normalizeToken = (token) => (typeof token === 'string' ? token.trim() : '');
 
 const signToken = (id, role) => {
     return jwt.sign({ id, role }, process.env.JWT_SECRET, {
@@ -51,8 +56,15 @@ exports.register = async (req, res) => {
             { expiresIn: '15m' }
         );
 
-        const verificationLink = `${getAppOrigin()}/verify-register/${registerToken}`;
+        const verificationLink = buildVerificationLink('/verify-register', registerToken);
         const message = `Please click the following link to verify and create your account:\n\n${verificationLink}\n\nIf you didn't request this, please ignore this email.`;
+        const html = `
+            <p>Please click the button below to verify and create your account:</p>
+            <p><a href="${verificationLink}" target="_blank" rel="noopener noreferrer">Verify registration</a></p>
+            <p>If the button does not work, copy and paste this link into your browser:</p>
+            <p>${verificationLink}</p>
+            <p>If you didn't request this, please ignore this email.</p>
+        `;
 
         try {
             const sendEmail = require('../utils/sendEmail');
@@ -60,7 +72,8 @@ exports.register = async (req, res) => {
             await sendEmail({
                 email,
                 subject: 'Account Registration Verification',
-                message
+                message,
+                html,
             });
 
             return res.status(200).json({
@@ -81,7 +94,7 @@ exports.register = async (req, res) => {
 
 exports.verifyRegister = async (req, res) => {
     try {
-        const { token } = req.body;
+        const token = normalizeToken(req.body?.token);
 
         if (!token) {
             return res.status(400).json({ error: 'Verification token is required' });
@@ -124,25 +137,60 @@ exports.verifyRegister = async (req, res) => {
         }
 
         // Create user + profile in one transaction
-        const createdUser = await db.transaction(async (trx) => {
-            const insertedUsers = await trx('users')
-                .insert({
-                    username: decoded.username,
-                    email: decoded.email,
-                    password_hash: decoded.password_hash,
-                    role: 'user'
-                })
-                .returning(['id', 'username', 'email', 'role']);
+        let createdUser;
 
-            const newUser = insertedUsers[0];
+        try {
+            createdUser = await db.transaction(async (trx) => {
+                const insertedUsers = await trx('users')
+                    .insert({
+                        username: decoded.username,
+                        email: decoded.email,
+                        password_hash: decoded.password_hash,
+                        role: 'user'
+                    })
+                    .returning(['id', 'username', 'email', 'role']);
 
-            await trx('profiles').insert({
-                user_id: newUser.id,
-                display_name: newUser.username
+                const newUser = insertedUsers[0];
+
+                await trx('profiles')
+                    .insert({
+                        user_id: newUser.id,
+                        display_name: newUser.username
+                    })
+                    .onConflict('user_id')
+                    .ignore();
+
+                return newUser;
             });
+        } catch (error) {
+            if (error.code !== '23505') {
+                throw error;
+            }
 
-            return newUser;
-        });
+            const existingUser = await db('users')
+                .where({ email: decoded.email, username: decoded.username })
+                .first();
+
+            if (!existingUser) {
+                return res.status(409).json({
+                    error: 'Email or username is already used by another account'
+                });
+            }
+
+            await db('profiles')
+                .insert({
+                    user_id: existingUser.id,
+                    display_name: existingUser.username
+                })
+                .onConflict('user_id')
+                .ignore();
+
+            return res.status(200).json({
+                status: 'success',
+                message: 'Account already verified',
+                username: existingUser.username
+            });
+        }
 
         return res.status(201).json({
             status: 'success',
@@ -227,8 +275,15 @@ exports.requestPasswordReset = async (req, res) => {
             { expiresIn: '10m' }
         );
 
-        const verificationLink = `${getAppOrigin()}/verify-reset/${resetToken}`;
+        const verificationLink = buildVerificationLink('/verify-reset', resetToken);
         const message = `Please click the following link to verify your password reset:\n\n${verificationLink}\n\nIf you didn't request this, please ignore this email.`;
+        const html = `
+            <p>Please click the button below to verify your password reset:</p>
+            <p><a href="${verificationLink}" target="_blank" rel="noopener noreferrer">Verify password reset</a></p>
+            <p>If the button does not work, copy and paste this link into your browser:</p>
+            <p>${verificationLink}</p>
+            <p>If you didn't request this, please ignore this email.</p>
+        `;
 
         try {
             const sendEmail = require('../utils/sendEmail');
@@ -236,7 +291,8 @@ exports.requestPasswordReset = async (req, res) => {
             await sendEmail({
                 email: user.email,
                 subject: 'Password Reset Verification',
-                message
+                message,
+                html,
             });
 
             return res.status(200).json({
@@ -257,7 +313,7 @@ exports.requestPasswordReset = async (req, res) => {
 
 exports.verifyPasswordReset = async (req, res) => {
     try {
-        const { token } = req.body;
+        const token = normalizeToken(req.body?.token);
 
         if (!token) {
             return res.status(400).json({ error: 'Verification token is required' });
