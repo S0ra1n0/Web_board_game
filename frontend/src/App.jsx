@@ -18,6 +18,9 @@ import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminGamesPage from './pages/admin/AdminGamesPage';
 import AdminStatsPage from './pages/admin/AdminStatsPage';
 import ApiDocsPage from './pages/admin/ApiDocsPage';
+import FriendsPage from './pages/client/FriendsPage';
+import MessagesPage from './pages/client/MessagesPage';
+import AchievementsPage from './pages/client/AchievementsPage';
 
 const LoadingScreen = () => (
     <div className="auth-container">
@@ -75,6 +78,9 @@ const App = () => (
                         <Route path="/games/:id" element={<GamePage />} />
                         <Route path="/profile" element={<ProfilePage />} />
                         <Route path="/users" element={<UsersPage />} />
+                        <Route path="/friends" element={<FriendsPage />} />
+                        <Route path="/messages" element={<MessagesPage />} />
+                        <Route path="/achievements" element={<AchievementsPage />} />
                         <Route path="/user" element={<Navigate to="/hub" replace />} />
                     </Route>
                 </Route>
