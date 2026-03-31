@@ -36,14 +36,18 @@ const GameControls = ({ onLeft, onRight, onEnter, onBack, onHint, onUp, onDown, 
                 <div className="control-pad-row control-pad-row-top">
                     <div className="control-pad-item">
                         <button type="button" onClick={onLeft} className="control-btn control-pad-btn control-square-btn">
-                            <ArrowLeft size={24} />
+                            <span className="control-direction-icon" aria-hidden="true">
+                                <ArrowLeft size={30} strokeWidth={2.8} />
+                            </span>
                         </button>
                         <span className="control-pad-label">LEFT</span>
                     </div>
 
                     <div className="control-pad-item">
                         <button type="button" onClick={onRight} className="control-btn control-pad-btn control-square-btn">
-                            <ArrowRight size={24} />
+                            <span className="control-direction-icon" aria-hidden="true">
+                                <ArrowRight size={30} strokeWidth={2.8} />
+                            </span>
                         </button>
                         <span className="control-pad-label">RIGHT</span>
                     </div>
@@ -53,21 +57,21 @@ const GameControls = ({ onLeft, onRight, onEnter, onBack, onHint, onUp, onDown, 
             <div className="control-pad-row control-pad-row-bottom">
                 <div className="control-pad-item">
                     <button type="button" onClick={onBack} className="control-btn control-pad-btn control-circle-btn control-variant-back">
-                        <Undo2 size={22} />
+                        <Undo2 size={44} strokeWidth={2.8} className="control-action-icon" />
                     </button>
                     <span className="control-pad-label">BACK</span>
                 </div>
 
                 <div className="control-pad-item">
                     <button type="button" onClick={onEnter} className="control-btn control-pad-btn control-circle-btn control-variant-enter">
-                        <CornerDownLeft size={22} />
+                        <CornerDownLeft size={44} strokeWidth={2.8} className="control-action-icon" />
                     </button>
                     <span className="control-pad-label">ENTER</span>
                 </div>
 
                 <div className="control-pad-item">
                     <button type="button" onClick={onHint} className="control-btn control-pad-btn control-circle-btn control-variant-help">
-                        <HelpCircle size={22} />
+                        <HelpCircle size={44} strokeWidth={2.8} className="control-action-icon" />
                     </button>
                     <span className="control-pad-label">HELP</span>
                 </div>
