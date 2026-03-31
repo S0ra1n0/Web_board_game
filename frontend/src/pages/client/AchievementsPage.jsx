@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import AchievementCard from '../../components/social/AchievementCard';
 import { getMyAchievements } from '../../services/achievementService';
 
@@ -12,8 +12,15 @@ const AchievementsPage = () => {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const hasLoadedRef = useRef(false);
 
     useEffect(() => {
+        if (hasLoadedRef.current) {
+            return;
+        }
+
+        hasLoadedRef.current = true;
+
         const loadAchievements = async () => {
             setLoading(true);
             setError('');

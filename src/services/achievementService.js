@@ -97,40 +97,39 @@ const calculateMetrics = async (executor, userId) => {
 
 exports.syncUserAchievements = async (executor, userId) => {
     const activeExecutor = getExecutor(executor);
-    const [achievements, existingRows, metrics] = await Promise.all([
+    const [achievements, metrics] = await Promise.all([
         activeExecutor('achievements').select('id', 'metric_key', 'goal_value'),
-        activeExecutor('user_achievements').where({ user_id: userId }),
         calculateMetrics(activeExecutor, userId),
     ]);
 
-    const existingByAchievementId = new Map(
-        existingRows.map((row) => [row.achievement_id, row])
-    );
-
     for (const achievement of achievements) {
         const progress = metrics[achievement.metric_key] || 0;
-        const existingRow = existingByAchievementId.get(achievement.id);
-        const unlockedAt =
-            existingRow?.unlocked_at || (progress >= achievement.goal_value ? activeExecutor.fn.now() : null);
+        const shouldUnlock = progress >= achievement.goal_value;
 
-        if (existingRow) {
-            await activeExecutor('user_achievements')
-                .where({ id: existingRow.id })
-                .update({
-                    progress_value: progress,
-                    unlocked_at: unlockedAt,
-                    updated_at: activeExecutor.fn.now(),
-                });
-        } else {
-            await activeExecutor('user_achievements').insert({
+        await activeExecutor('user_achievements')
+            .insert({
                 user_id: userId,
                 achievement_id: achievement.id,
                 progress_value: progress,
-                unlocked_at: unlockedAt,
+                unlocked_at: shouldUnlock ? activeExecutor.fn.now() : null,
                 created_at: activeExecutor.fn.now(),
                 updated_at: activeExecutor.fn.now(),
+            })
+            .onConflict(['user_id', 'achievement_id'])
+            .ignore();
+
+        await activeExecutor('user_achievements')
+            .where({
+                user_id: userId,
+                achievement_id: achievement.id,
+            })
+            .update({
+                progress_value: progress,
+                unlocked_at: shouldUnlock
+                    ? activeExecutor.raw('COALESCE(unlocked_at, CURRENT_TIMESTAMP)')
+                    : activeExecutor.raw('unlocked_at'),
+                updated_at: activeExecutor.fn.now(),
             });
-        }
     }
 };
 
