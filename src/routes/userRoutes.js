@@ -8,10 +8,5 @@ router.get('/profile', protect, userController.getProfile);
 
 router.get('/stats', protect, userController.getUserStats);
 router.post('/stats', protect, userController.updateUserStats);
-router.get('/leaderboard/:game_id', protect, userController.getLeaderboard);
-
-router.post('/save-game', protect, userController.saveGameProgress);
-router.get('/load-game/:game_id', protect, userController.loadGameProgress);
-router.delete('/delete-game/:game_id', protect, userController.deleteGameProgress);
 
 module.exports = router;
