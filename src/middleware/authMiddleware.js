@@ -21,6 +21,10 @@ exports.protect = async (req, res, next) => {
             return res.status(401).json({ error: 'The user belonging to this token no longer exists.' });
         }
 
+        if (user.is_active === false) {
+            return res.status(403).json({ error: 'This account has been disabled.' });
+        }
+
         // Grant access to protected route
         req.user = user;
         next();

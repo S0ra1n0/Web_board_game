@@ -178,6 +178,10 @@ exports.login = async (req, res) => {
             return res.status(401).json({ error: 'Incorrect email or password' });
         }
 
+        if (user.is_active === false) {
+            return res.status(403).json({ error: 'This account has been disabled.' });
+        }
+
         const token = signToken(user.id, user.role);
 
         delete user.password_hash;

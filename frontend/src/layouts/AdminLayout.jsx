@@ -15,29 +15,35 @@ const AdminLayout = () => {
 
     return (
         <div className="dashboard-shell">
-            <div className="app-topbar glass-panel">
-                <div className="brand-block">
-                    <span className="brand-kicker">Admin Console</span>
-                    <h1>System Control</h1>
-                </div>
-
-                <AdminNavigation />
-
-                <div className="topbar-actions">
-                    <div className="user-badge">
-                        <strong>{user?.displayName || user?.username}</strong>
-                        <span>{user?.email}</span>
+            <div className="admin-layout-shell">
+                <aside className="admin-sidebar glass-panel">
+                    <div className="brand-block admin-sidebar-brand">
+                        <span className="brand-kicker">Admin Console</span>
+                        <h1>Operations Deck</h1>
+                        <p className="muted-copy">Control the platform from one focused workspace.</p>
                     </div>
-                    <ThemeToggle />
-                    <button type="button" className="control-btn action-btn topbar-btn" onClick={handleLogout}>
-                        Logout
-                    </button>
-                </div>
-            </div>
 
-            <main className="app-content">
-                <Outlet />
-            </main>
+                    <AdminNavigation />
+
+                    <div className="admin-sidebar-footer">
+                        <div className="user-badge admin-sidebar-user">
+                            <strong>{user?.displayName || user?.username}</strong>
+                            <span>{user?.email || 'Administrator session'}</span>
+                        </div>
+
+                        <div className="admin-sidebar-actions">
+                            <ThemeToggle />
+                            <button type="button" className="control-btn action-btn topbar-btn admin-logout-btn" onClick={handleLogout}>
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </aside>
+
+                <main className="app-content admin-main-content">
+                    <Outlet />
+                </main>
+            </div>
         </div>
     );
 };

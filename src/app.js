@@ -15,6 +15,7 @@ const rankingRoutes = require('./routes/rankingRoutes');
 const gameRoutes = require('./routes/gameRoutes');
 
 const adminRoutes = require('./routes/adminRoutes');
+const apiDocsRoutes = require('./routes/apiDocsRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
@@ -24,6 +25,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/games', reviewRoutes);
 app.use('/api/rankings', rankingRoutes);
+app.use('/api-docs', apiDocsRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

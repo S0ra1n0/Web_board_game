@@ -29,7 +29,7 @@ exports.seed = async function (knex) {
             username: 'user2',
             email: 'user2@example.com',
             password_hash: user1Hash,
-            role: 'user'
+            role: 'moderator'
         },
         {
             username: 'user3',

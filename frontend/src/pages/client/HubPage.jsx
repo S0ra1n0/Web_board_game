@@ -6,13 +6,14 @@ import GameControls from '../../components/hub/GameControls';
 import { getCaroArt, getTicTacToeArt, getMemoryArt, getDrawArt } from '../../utils/pixelArt';
 import { gameService } from '../../services/gameService';
 import { usePhysicalControls } from '../../hooks/games/engine/usePhysicalControls';
+import { normalizeGameKey } from '../../hooks/games/gameUtils';
 
-// Fallback art mapping if backend id matches
 const ART_MAP = {
-    'CARO': getCaroArt,
-    'TICTACTOE': getTicTacToeArt,
-    'MEMORY': getMemoryArt,
-    'DRAW': getDrawArt
+    CARO5: getCaroArt,
+    CARO4: getCaroArt,
+    TICTACTOE: getTicTacToeArt,
+    MEMORY: getMemoryArt,
+    FREEDRAW: getDrawArt,
 };
 
 const HubPage = () => {
@@ -32,15 +33,13 @@ const HubPage = () => {
         const fetchHubData = async () => {
             try {
                 const dbGames = await gameService.getAllGames();
-                // Merge db metadata with frontend pixel arts
                 const merged = dbGames.map(g => ({
                     ...g,
-                    render: ART_MAP[g.id] || getDrawArt // fallback
+                    render: ART_MAP[normalizeGameKey(g.name || g.id)] || getDrawArt,
+                    enabled: g.enabled ?? g.is_active,
                 }));
-                // Sort by ID or whatever, or just keep as is
                 setGames(merged);
                 
-                // Fetch saved games meta
                 const meta = {};
                 for (const g of dbGames) {
                     try {
@@ -49,7 +48,7 @@ const HubPage = () => {
                             meta[g.id] = save.savedAt;
                         }
                     } catch (e) {
-                         // ignore 404
+                        // ignore 404
                     }
                 }
                 setSaveMetaMap(meta);
@@ -79,7 +78,6 @@ const HubPage = () => {
     const handleEnter = () => {
         if (saveFoundModal || hintModal || !activeGame) return;
         
-        // Block unavailable ones if you want, but assume all from backend are available unless flagged
         if (activeGame.enabled === false) {
             return;
         }
@@ -102,9 +100,7 @@ const HubPage = () => {
         navigate(`/games/${activeGame.id}`);
     };
 
-    const handleBack = () => {
-        // Log out or back to profile? Usually back does nothing here
-    };
+    const handleBack = () => {};
 
     const handleHint = () => {
         if (saveFoundModal || hintModal || !activeGame) return;
@@ -135,7 +131,6 @@ const HubPage = () => {
         ? new Date(saveMetaMap[activeGame.id]).toLocaleString()
         : 'No save';
 
-    // Ensure we don't crash if activeGame.enabled doesn't exist. Fallback to boolean check
     const isAvailable = activeGame.enabled !== false; 
 
     return (

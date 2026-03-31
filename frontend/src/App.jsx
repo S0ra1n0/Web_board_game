@@ -6,7 +6,6 @@ import RegisterPage from './pages/RegisterPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import VerifyResetPage from './pages/VerifyResetPage';
 import VerifyRegisterPage from './pages/VerifyRegisterPage';
-import AdminHome from './pages/AdminHome';
 import PublicLayout from './layouts/PublicLayout';
 import ClientLayout from './layouts/ClientLayout';
 import AdminLayout from './layouts/AdminLayout';
@@ -14,6 +13,11 @@ import HubPage from './pages/client/HubPage';
 import GamePage from './pages/client/GamePage';
 import ProfilePage from './pages/client/ProfilePage';
 import UsersPage from './pages/client/UsersPage';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import AdminUsersPage from './pages/admin/AdminUsersPage';
+import AdminGamesPage from './pages/admin/AdminGamesPage';
+import AdminStatsPage from './pages/admin/AdminStatsPage';
+import ApiDocsPage from './pages/admin/ApiDocsPage';
 
 const LoadingScreen = () => (
     <div className="auth-container">
@@ -24,14 +28,21 @@ const LoadingScreen = () => (
     </div>
 );
 
+const getRedirectPathForRole = (role) => {
+    if (role === 'admin') return '/admin';
+    if (role === 'moderator') return '/admin/users';
+    return '/hub';
+};
+
 const ProtectedRoute = ({ role }) => {
     const { token, user, loading } = useAuth();
+    const allowedRoles = Array.isArray(role) ? role : role ? [role] : [];
 
     if (loading) return <LoadingScreen />;
     if (!token) return <Navigate to="/login" replace />;
 
-    if (role && user && user.role !== role) {
-        return <Navigate to={user.role === 'admin' ? '/admin' : '/hub'} replace />;
+    if (allowedRoles.length && user && !allowedRoles.includes(user.role)) {
+        return <Navigate to={getRedirectPathForRole(user.role)} replace />;
     }
 
     return <Outlet />;
@@ -43,7 +54,7 @@ const HomeRedirect = () => {
     if (loading) return <LoadingScreen />;
     if (!token) return <Navigate to="/login" replace />;
 
-    return <Navigate to={user?.role === 'admin' ? '/admin' : '/hub'} replace />;
+    return <Navigate to={getRedirectPathForRole(user?.role)} replace />;
 };
 
 const App = () => (
@@ -68,9 +79,17 @@ const App = () => (
                     </Route>
                 </Route>
 
-                <Route element={<ProtectedRoute role="admin" />}>
+                <Route element={<ProtectedRoute role={['admin', 'moderator']} />}>
                     <Route element={<AdminLayout />}>
-                        <Route path="/admin" element={<AdminHome />} />
+                        <Route element={<ProtectedRoute role="admin" />}>
+                            <Route path="/admin" element={<AdminDashboardPage />} />
+                        </Route>
+                        <Route path="/admin/users" element={<AdminUsersPage />} />
+                        <Route element={<ProtectedRoute role="admin" />}>
+                            <Route path="/admin/games" element={<AdminGamesPage />} />
+                            <Route path="/admin/stats" element={<AdminStatsPage />} />
+                            <Route path="/admin/api-docs" element={<ApiDocsPage />} />
+                        </Route>
                     </Route>
                 </Route>
 
