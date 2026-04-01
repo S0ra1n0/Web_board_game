@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { gameService } from '../../services/gameService';
 import { rankingService } from '../../services/rankingService';
 import { formatDuration } from '../../hooks/games/gameUtils';
@@ -53,6 +54,7 @@ const getMetricMeta = (game) => {
 
 const RankingsPage = () => {
     const location = useLocation();
+    const { user } = useAuth();
     const [games, setGames] = useState([]);
     const [selectedGameId, setSelectedGameId] = useState('');
     const [scope, setScope] = useState('global');
@@ -234,12 +236,17 @@ const RankingsPage = () => {
                             const rankNumber =
                                 (pagination.page - 1) * pagination.pageSize + index + 1;
                             const rawValue = metricMeta.readValue(entry);
+                            const isCurrentUser =
+                                entry.isCurrentUser || (user && entry.user_id === user.id);
 
                             return (
                                 <article key={`${entry.user_id}-${rankNumber}`} className="ranking-card">
                                     <div className="ranking-rank-badge">#{rankNumber}</div>
                                     <div className="ranking-card-main">
-                                        <strong>{entry.username}</strong>
+                                        <strong>
+                                            {entry.username}
+                                            {isCurrentUser ? ' (You)' : ''}
+                                        </strong>
                                         <span className="muted-copy">{metricMeta.label}</span>
                                     </div>
                                     <div className="ranking-card-score">

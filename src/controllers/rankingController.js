@@ -13,15 +13,10 @@ exports.getGameRankings = async (req, res) => {
         const validScopes = ['global', 'friends', 'me'];
         const currentScope = validScopes.includes(scope) ? scope : 'global';
 
-        // If 'me' or 'friends', we typically need authenticated user
-        let userId = null;
-        if (['me', 'friends'].includes(currentScope)) {
-            // Suppose auth middleware optionally sets req.user (even on GET)
-            if (req.user) {
-                userId = req.user.id;
-            } else {
-                return res.status(401).json({ error: 'Authentication required for this scope' });
-            }
+        const userId = req.user?.id || null;
+
+        if (['me', 'friends'].includes(currentScope) && !userId) {
+            return res.status(401).json({ error: 'Authentication required for this scope' });
         }
 
         const { rankings, totalItems } = await rankingService.getRankings({

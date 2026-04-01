@@ -45,15 +45,9 @@ exports.getRankings = async ({ gameId, scope, userId, page, pageSize }) => {
         const friendIds = friendshipRows
             .map((row) => (row.user_one_id === userId ? row.user_two_id : row.user_one_id))
             .filter(Boolean);
+        const visibleUserIds = [...new Set([userId, ...friendIds])];
 
-        if (friendIds.length === 0) {
-            return {
-                rankings: [],
-                totalItems: 0,
-            };
-        }
-
-        query = query.whereIn('users.id', friendIds);
+        query = query.whereIn('users.id', visibleUserIds);
     }
 
     const allRecords = await query.clone().clearSelect().count('* as total_users').groupBy('users.id');
@@ -64,7 +58,10 @@ exports.getRankings = async ({ gameId, scope, userId, page, pageSize }) => {
         .limit(pageSize)
         .offset(offset);
 
-    // If score_type is time, maybe we want to format duration ? Let client do it.
+    const rankingsWithViewerState = rankings.map((entry) => ({
+        ...entry,
+        isCurrentUser: Boolean(userId && entry.user_id === userId),
+    }));
     
-    return { rankings, totalItems };
+    return { rankings: rankingsWithViewerState, totalItems };
 };
