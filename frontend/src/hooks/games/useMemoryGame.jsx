@@ -241,10 +241,10 @@ export const useMemoryGame = ({ onGameOver, gameMeta }) => {
             `Move around the deck with the d-pad and press Enter to flip a card. Find all matching color pairs on a ${boardLayout.size}x${boardLayout.size} board before time expires.`,
         statusText,
         metaChips: [
-            `BOARD ${boardLayout.size}`,
-            `PAIRS ${matched.length / 2}/${(boardLayout.size * boardLayout.size) / 2}`,
-            `MOVES ${moves}`,
-            timeLimit ? `LEFT ${formatDuration(secondsLeft)}` : 'LIMIT OFF',
+            `Board: ${boardLayout.size}x${boardLayout.size}`,
+            `Pairs: ${matched.length / 2}/${(boardLayout.size * boardLayout.size) / 2}`,
+            `Moves: ${moves}`,
+            timeLimit ? `Time left: ${formatDuration(secondsLeft)}` : 'Timer: Off',
         ],
     };
 };

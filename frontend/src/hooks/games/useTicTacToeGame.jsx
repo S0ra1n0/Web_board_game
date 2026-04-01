@@ -290,9 +290,11 @@ export const useTicTacToeGame = ({ onGameOver }) => {
                 ? 'Your turn to place a mark.'
                 : 'Computer is thinking...',
         metaChips: [
-            `SIDE ${playerSide}`,
-            `TIME ${formatDuration(elapsedSeconds)}`,
-            winner ? `RESULT ${winner}` : isPlayerTurn ? 'TURN YOU' : 'TURN CPU',
+            `Side: ${playerSide}`,
+            `Time: ${formatDuration(elapsedSeconds)}`,
+            winner
+                ? `Result: ${winner === 'DRAW' ? 'Draw' : winner === playerSide ? 'Win' : 'Defeat'}`
+                : `Turn: ${isPlayerTurn ? 'You' : 'Computer'}`,
         ],
     };
 };

@@ -278,10 +278,12 @@ export const useCaroBaseGame = ({ onGameOver, targetLength, title, gameMeta }) =
                 ? 'Pick an open tile to place your next stone.'
                 : 'Computer is selecting a reply move.',
         metaChips: [
-            `BOARD ${boardLayout.size}`,
-            `GOAL ${targetLength}`,
-            `TIME ${formatDuration(elapsedSeconds)}`,
-            winner ? `RESULT ${winner}` : isPlayerTurn ? 'TURN YOU' : 'TURN CPU',
+            `Board: ${boardLayout.size}x${boardLayout.size}`,
+            `Goal: ${targetLength} in a row`,
+            `Time: ${formatDuration(elapsedSeconds)}`,
+            winner
+                ? `Result: ${winner === 'DRAW' ? 'Draw' : winner === playerSide ? 'Win' : 'Defeat'}`
+                : `Turn: ${isPlayerTurn ? 'You' : 'Computer'}`,
         ],
     };
 };

@@ -320,10 +320,10 @@ export const useMatch3Game = ({ onGameOver, gameMeta }) => {
             `Use the d-pad to position the cursor. Press Enter once to select a tile and again on an adjacent tile to swap. Make lines of three or more on a ${boardLayout.size}x${boardLayout.size} board before time runs out.`,
         statusText,
         metaChips: [
-            `BOARD ${boardLayout.size}`,
-            `SCORE ${score}`,
-            timeLimit ? `LEFT ${formatDuration(secondsLeft)}` : 'LIMIT OFF',
-            selectedCell ? 'STATE SWAP' : 'STATE MOVE',
+            `Board: ${boardLayout.size}x${boardLayout.size}`,
+            `Score: ${score}`,
+            timeLimit ? `Time left: ${formatDuration(secondsLeft)}` : 'Timer: Off',
+            `Mode: ${selectedCell ? 'Swap target' : 'Move cursor'}`,
         ],
     };
 };

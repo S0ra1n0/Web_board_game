@@ -175,10 +175,10 @@ export const useDrawGame = ({ gameMeta }) => {
             `Use the d-pad to move the cursor around the ${boardLayout.size}x${boardLayout.size} canvas. Move upward from the top row to enter palette mode, choose a color with Enter, then come back down to paint pixels.`,
         statusText: mode === 'palette' ? 'Palette mode active. Choose your paint color.' : 'Canvas mode active. Enter paints or erases the current pixel.',
         metaChips: [
-            `BOARD ${boardLayout.size}`,
-            `COLOR ${currentColorIndex + 1}`,
-            mode === 'palette' ? 'MODE PALETTE' : 'MODE CANVAS',
-            isDirty ? 'STATE DIRTY' : 'STATE FRESH',
+            `Board: ${boardLayout.size}x${boardLayout.size}`,
+            `Color: ${currentColorIndex + 1}`,
+            `Mode: ${mode === 'palette' ? 'Palette' : 'Canvas'}`,
+            `Changes: ${isDirty ? 'Unsaved' : 'Clean'}`,
         ],
     };
 };

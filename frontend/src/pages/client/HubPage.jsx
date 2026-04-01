@@ -3,7 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import GameMatrix from '../../components/hub/GameMatrix';
 import GameControls from '../../components/hub/GameControls';
-import { getCaroArt, getTicTacToeArt, getMemoryArt, getDrawArt } from '../../utils/pixelArt';
+import {
+    getCaroArt,
+    getDrawArt,
+    getMatch3Art,
+    getMemoryArt,
+    getSnakeArt,
+    getTicTacToeArt,
+} from '../../utils/pixelArt';
 import { gameService } from '../../services/gameService';
 import { usePhysicalControls } from '../../hooks/games/engine/usePhysicalControls';
 import { normalizeGameKey } from '../../hooks/games/gameUtils';
@@ -13,6 +20,8 @@ const ART_MAP = {
     CARO4: getCaroArt,
     TICTACTOE: getTicTacToeArt,
     MEMORY: getMemoryArt,
+    SNAKE: getSnakeArt,
+    MATCH3: getMatch3Art,
     FREEDRAW: getDrawArt,
 };
 
@@ -106,7 +115,7 @@ const HubPage = () => {
         if (saveFoundModal || hintModal || !activeGame) return;
         setHintModal({
             title: `Welcome to Web Board Game Hub`,
-            description: `USE LEFT / RIGHT ARROWS to browse games.\nPRESS ENTER to select a game.\nPRESS HINT or H to close this dialog.`,
+            description: `Use Left and Right to browse available games.\nPress Enter to open the highlighted game.\nPress Help to close this guide.`,
             onClose: () => setHintModal(null)
         });
     };
@@ -150,7 +159,7 @@ const HubPage = () => {
                     showDirectionalPad={false}
                 />
 
-                <div className="video-stage-caption">SELECT GAME (LEFT/RIGHT -{">"} ENTER)</div>
+                <div className="video-stage-caption">Choose a game with Left or Right, then press Enter</div>
 
                 <div className="video-stage-meta">
                     <span className="video-meta-chip">{activeGame.name || activeGame.title}</span>

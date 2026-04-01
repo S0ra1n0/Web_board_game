@@ -281,10 +281,10 @@ button:active {
 
 /* Base Matrix Color variable depending on theme */
 :root {
-  --matrix-off: #d7dee6;
+  --matrix-off: rgba(203, 213, 225, 0.34);
 }
 [data-theme='dark'] {
-  --matrix-off: #d7dee6;
+  --matrix-off: rgba(203, 213, 225, 0.34);
 }
 
 .game-matrix-container {

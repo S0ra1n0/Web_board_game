@@ -257,12 +257,12 @@ export const useSnakeGame = ({ onGameOver, gameMeta }) => {
             `Snake starts immediately on a ${boardLayout.size}x${boardLayout.size} arena. Use the d-pad to steer, avoid walls and your own body, and press Enter to pause or resume.`,
         statusText,
         metaChips: [
-            `BOARD ${boardLayout.size}`,
-            `SCORE ${score}`,
+            `Board: ${boardLayout.size}x${boardLayout.size}`,
+            `Score: ${score}`,
             timeLimit
-                ? `LEFT ${formatDuration(Math.max(0, timeLimit - elapsedSeconds))}`
-                : `TIME ${formatDuration(elapsedSeconds)}`,
-            isRunning ? 'STATE LIVE' : hasEnded ? 'STATE OVER' : 'STATE PAUSED',
+                ? `Time left: ${formatDuration(Math.max(0, timeLimit - elapsedSeconds))}`
+                : `Time: ${formatDuration(elapsedSeconds)}`,
+            `Status: ${isRunning ? 'Live' : hasEnded ? 'Finished' : 'Paused'}`,
         ],
     };
 };

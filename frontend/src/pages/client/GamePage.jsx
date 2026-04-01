@@ -201,7 +201,7 @@ const GameRuntimeShell = ({ gameMeta, gameId, useGameHook }) => {
                 />
 
                 <div className="video-stage-caption">
-                    {isPlaying ? gameInstance.statusText : 'START A ROUND OR LOAD A SAVE TO PLAY'}
+                    {isPlaying ? gameInstance.statusText : 'Press Enter to start a round or load a saved game'}
                 </div>
                 <div className="video-stage-meta">
                     <span className="video-meta-chip">{gameMeta.name}</span>
