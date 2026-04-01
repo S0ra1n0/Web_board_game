@@ -38,17 +38,6 @@ const ClientLayout = () => {
             <main className="app-content">
                 <Outlet />
             </main>
-
-            <footer className="client-footer glass-panel">
-                <div className="client-footer-copy">
-                    <strong>Retro matrix console</strong>
-                    <span>Five-button play flow, seeded social features, and admin-manageable board games.</span>
-                </div>
-                <div className="client-footer-meta">
-                    <span>{user?.role === 'user' ? 'Client mode active' : user?.role || 'Session active'}</span>
-                    <span>{user?.favoriteGame ? `Favorite: ${user.favoriteGame}` : 'Pick a game from the hub'}</span>
-                </div>
-            </footer>
         </div>
     );
 };

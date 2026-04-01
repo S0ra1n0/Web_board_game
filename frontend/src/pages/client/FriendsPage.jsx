@@ -36,6 +36,7 @@ const FriendsPage = () => {
     const [actionKey, setActionKey] = useState('');
     const [error, setError] = useState('');
     const [feedback, setFeedback] = useState('');
+    const normalizedQuery = query.trim();
 
     const loadFriends = async (page = 1) => {
         const data = await getFriends({ page, pageSize: FRIEND_PAGE_SIZE });
@@ -70,24 +71,42 @@ const FriendsPage = () => {
         await loadPageData(page);
     };
 
-    const handleSearchSubmit = async (event) => {
-        event.preventDefault();
-        setSearching(true);
-        setError('');
-        setFeedback('');
+    const loadSearchResults = async ({ searchTerm = query, showSpinner = true } = {}) => {
+        const trimmedQuery = String(searchTerm || '').trim();
+
+        if (!trimmedQuery) {
+            setSearchResults([]);
+            return;
+        }
+
+        if (showSpinner) {
+            setSearching(true);
+        }
 
         try {
             const data = await searchUsers({
-                query,
+                query: trimmedQuery,
                 page: 1,
                 pageSize: SEARCH_PAGE_SIZE,
             });
 
             setSearchResults(data.data.items);
+        } finally {
+            if (showSpinner) {
+                setSearching(false);
+            }
+        }
+    };
+
+    const handleSearchSubmit = async (event) => {
+        event.preventDefault();
+        setError('');
+        setFeedback('');
+
+        try {
+            await loadSearchResults({ searchTerm: query, showSpinner: true });
         } catch (err) {
             setError(err.message || 'Failed to search users');
-        } finally {
-            setSearching(false);
         }
     };
 
@@ -99,7 +118,13 @@ const FriendsPage = () => {
         try {
             await action();
             setFeedback(successMessage);
-            await Promise.all([loadFriends(friendPagination.page), loadRequests()]);
+
+            const refreshTasks = [loadFriends(friendPagination.page), loadRequests()];
+            if (normalizedQuery) {
+                refreshTasks.push(loadSearchResults({ searchTerm: normalizedQuery, showSpinner: false }));
+            }
+
+            await Promise.all(refreshTasks);
         } catch (err) {
             setError(err.message || 'Action failed');
         } finally {
@@ -155,33 +180,101 @@ const FriendsPage = () => {
 
                 {searchResults.length > 0 ? (
                     <div className="user-card-grid">
-                        {searchResults.map((player) => (
-                            <PlayerCard
-                                key={player.id}
-                                player={player}
-                                subtitle={player.bio || 'No bio yet.'}
-                                meta={[
-                                    { label: 'Location', value: player.location || 'Unknown' },
-                                    { label: 'Favorite', value: player.favoriteGame || 'Not set' },
-                                ]}
-                                actions={
+                        {searchResults.map((player) => {
+                            let actions = (
+                                <button
+                                    type="button"
+                                    className="control-btn enter-btn"
+                                    disabled={actionKey === `request-${player.id}`}
+                                    onClick={() =>
+                                        runAction(
+                                            `request-${player.id}`,
+                                            () => sendFriendRequest(player.id),
+                                            `Friend request sent to ${player.displayName || player.username}.`
+                                        )
+                                    }
+                                >
+                                    {actionKey === `request-${player.id}` ? 'Sending...' : 'Send Request'}
+                                </button>
+                            );
+
+                            if (player.relationship === 'friend') {
+                                actions = (
+                                    <button type="button" className="control-btn nav-btn" disabled>
+                                        Friends
+                                    </button>
+                                );
+                            } else if (player.relationship === 'incoming_request' && player.pendingRequestId) {
+                                actions = (
+                                    <>
+                                        <button
+                                            type="button"
+                                            className="control-btn enter-btn"
+                                            disabled={actionKey === `accept-search-${player.pendingRequestId}`}
+                                            onClick={() =>
+                                                runAction(
+                                                    `accept-search-${player.pendingRequestId}`,
+                                                    () => acceptFriendRequest(player.pendingRequestId),
+                                                    `You are now friends with ${player.displayName || player.username}.`
+                                                )
+                                            }
+                                        >
+                                            {actionKey === `accept-search-${player.pendingRequestId}`
+                                                ? 'Accepting...'
+                                                : 'Accept'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="control-btn nav-btn"
+                                            disabled={actionKey === `reject-search-${player.pendingRequestId}`}
+                                            onClick={() =>
+                                                runAction(
+                                                    `reject-search-${player.pendingRequestId}`,
+                                                    () => deleteFriendRequest(player.pendingRequestId),
+                                                    `Request from ${player.displayName || player.username} was rejected.`
+                                                )
+                                            }
+                                        >
+                                            {actionKey === `reject-search-${player.pendingRequestId}`
+                                                ? 'Rejecting...'
+                                                : 'Reject'}
+                                        </button>
+                                    </>
+                                );
+                            } else if (player.relationship === 'outgoing_request' && player.pendingRequestId) {
+                                actions = (
                                     <button
                                         type="button"
-                                        className="control-btn enter-btn"
-                                        disabled={actionKey === `request-${player.id}`}
+                                        className="control-btn action-btn"
+                                        disabled={actionKey === `cancel-search-${player.pendingRequestId}`}
                                         onClick={() =>
                                             runAction(
-                                                `request-${player.id}`,
-                                                () => sendFriendRequest(player.id),
-                                                `Friend request sent to ${player.displayName || player.username}.`
+                                                `cancel-search-${player.pendingRequestId}`,
+                                                () => deleteFriendRequest(player.pendingRequestId),
+                                                `Friend request to ${player.displayName || player.username} was cancelled.`
                                             )
                                         }
                                     >
-                                        {actionKey === `request-${player.id}` ? 'Sending...' : 'Send Request'}
+                                        {actionKey === `cancel-search-${player.pendingRequestId}`
+                                            ? 'Removing...'
+                                            : 'Remove Request'}
                                     </button>
-                                }
-                            />
-                        ))}
+                                );
+                            }
+
+                            return (
+                                <PlayerCard
+                                    key={player.id}
+                                    player={player}
+                                    subtitle={player.bio || 'No bio yet.'}
+                                    meta={[
+                                        { label: 'Location', value: player.location || 'Unknown' },
+                                        { label: 'Favorite', value: player.favoriteGame || 'Not set' },
+                                    ]}
+                                    actions={actions}
+                                />
+                            );
+                        })}
                     </div>
                 ) : query && !searching ? (
                     <div className="page-center-state social-empty-state">
@@ -190,7 +283,7 @@ const FriendsPage = () => {
                 ) : null}
             </section>
 
-            <div className="content-grid two-column-grid social-two-column">
+            <div className="content-grid two-column-grid social-two-column friends-page-layout">
                 <section className="page-panel glass-panel">
                     <div className="section-heading">
                         <div>
@@ -366,7 +459,7 @@ const FriendsPage = () => {
                                                     )
                                                 }
                                             >
-                                                {actionKey === `cancel-${request.id}` ? 'Cancelling...' : 'Cancel Request'}
+                                                {actionKey === `cancel-${request.id}` ? 'Removing...' : 'Remove Request'}
                                             </button>
                                         }
                                     />

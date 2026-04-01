@@ -12,6 +12,10 @@ const mapSearchResult = (row) => ({
     createdAt: row.created_at,
 });
 
+const normalizePair = (firstId, secondId) => {
+    return [firstId, secondId].sort();
+};
+
 exports.searchUsers = async ({ currentUserId, query, page = 1, pageSize = 6 }) => {
     const normalizedQuery = String(query || '').trim();
     const safePage = Math.max(1, Number.parseInt(page, 10) || 1);
@@ -59,8 +63,73 @@ exports.searchUsers = async ({ currentUserId, query, page = 1, pageSize = 6 }) =
         .limit(safePageSize)
         .offset((currentPage - 1) * safePageSize);
 
+    const userIds = users.map((user) => user.id);
+    let friendships = [];
+    let pendingRequests = [];
+
+    if (userIds.length > 0) {
+        [friendships, pendingRequests] = await Promise.all([
+            db('friendships')
+                .select('id', 'user_one_id', 'user_two_id')
+                .where((builder) => {
+                    builder
+                        .where('user_one_id', currentUserId)
+                        .whereIn('user_two_id', userIds)
+                        .orWhere((nested) => {
+                            nested
+                                .where('user_two_id', currentUserId)
+                                .whereIn('user_one_id', userIds);
+                        });
+                }),
+            db('friend_requests')
+                .select('id', 'sender_id', 'receiver_id')
+                .where({ status: 'pending' })
+                .andWhere((builder) => {
+                    builder
+                        .where('sender_id', currentUserId)
+                        .whereIn('receiver_id', userIds)
+                        .orWhere((nested) => {
+                            nested
+                                .where('receiver_id', currentUserId)
+                                .whereIn('sender_id', userIds);
+                        });
+                }),
+        ]);
+    }
+
+    const friendshipPairs = new Set(
+        friendships.map((friendship) => normalizePair(friendship.user_one_id, friendship.user_two_id).join(':'))
+    );
+    const pendingRequestsByOtherUserId = new Map(
+        pendingRequests.map((request) => {
+            const otherUserId =
+                request.sender_id === currentUserId ? request.receiver_id : request.sender_id;
+            const direction =
+                request.sender_id === currentUserId ? 'outgoing_request' : 'incoming_request';
+
+            return [
+                otherUserId,
+                {
+                    id: request.id,
+                    direction,
+                },
+            ];
+        })
+    );
+
     return {
-        items: users.map(mapSearchResult),
+        items: users.map((user) => {
+            const pairKey = normalizePair(currentUserId, user.id).join(':');
+            const pendingRequest = pendingRequestsByOtherUserId.get(user.id);
+
+            return {
+                ...mapSearchResult(user),
+                relationship: friendshipPairs.has(pairKey)
+                    ? 'friend'
+                    : pendingRequest?.direction || 'none',
+                pendingRequestId: pendingRequest?.id || null,
+            };
+        }),
         pagination: {
             page: currentPage,
             pageSize: safePageSize,
