@@ -73,7 +73,7 @@ const App = () => (
                     <Route path="/verify-register/:token" element={<VerifyRegisterPage />} />
                 </Route>
 
-                <Route element={<ProtectedRoute role="user" />}>
+                <Route element={<ProtectedRoute role={['user', 'admin', 'moderator']} />}>
                     <Route element={<ClientLayout />}>
                         <Route path="/hub" element={<HubPage />} />
                         <Route path="/games/:id" element={<GamePage />} />

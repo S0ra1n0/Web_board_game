@@ -13,6 +13,10 @@ const ClientLayout = () => {
         navigate('/login', { replace: true });
     };
 
+    const goToSystemPage = () => {
+        navigate('/admin/users');
+    };
+
     return (
         <div className="dashboard-shell">
             <div className="app-topbar glass-panel">
@@ -24,6 +28,11 @@ const ClientLayout = () => {
                 <ClientNavigation />
 
                 <div className="topbar-actions">
+                    {['admin', 'moderator'].includes(user?.role) && (
+                        <button type="button" className="control-btn action-btn topbar-btn" onClick={goToSystemPage}>
+                            Switch to System Page
+                        </button>
+                    )}
                     <div className="user-badge">
                         <strong>{user?.displayName || user?.username}</strong>
                         <span>{user?.favoriteGame ? `Likes ${user.favoriteGame}` : 'Ready to play'}</span>

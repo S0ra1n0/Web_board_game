@@ -32,6 +32,11 @@ const AdminLayout = () => {
                         </div>
 
                         <div className="admin-sidebar-actions">
+                            {['admin', 'moderator'].includes(user?.role) && (
+                                <button type="button" className="control-btn action-btn topbar-btn admin-switch-btn" onClick={() => navigate('/hub')}>
+                                    Switch to Main Page
+                                </button>
+                            )}
                             <ThemeToggle />
                             <button type="button" className="control-btn action-btn topbar-btn admin-logout-btn" onClick={handleLogout}>
                                 Logout
