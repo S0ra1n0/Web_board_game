@@ -2,7 +2,45 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 
-app.use(cors());
+const normalizeOrigin = (value) => String(value || '').replace(/\/+$/, '');
+
+const buildAllowedOrigins = () => {
+    const origins = new Set();
+
+    if (process.env.APP_ORIGIN) {
+        origins.add(normalizeOrigin(process.env.APP_ORIGIN));
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+        [
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+            'http://localhost:5174',
+            'http://127.0.0.1:5174',
+        ].forEach((origin) => origins.add(normalizeOrigin(origin)));
+    }
+
+    return origins;
+};
+
+const allowedOrigins = buildAllowedOrigins();
+
+app.use(
+    cors({
+        origin(origin, callback) {
+            if (!origin) {
+                return callback(null, true);
+            }
+
+            if (allowedOrigins.has(normalizeOrigin(origin))) {
+                return callback(null, true);
+            }
+
+            return callback(new Error(`CORS blocked for origin: ${origin}`));
+        },
+        credentials: true,
+    })
+);
 app.use(express.json());
 
 // Routes

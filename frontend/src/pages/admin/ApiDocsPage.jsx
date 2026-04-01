@@ -8,6 +8,12 @@ const ApiDocsPage = () => {
     const [loading, setLoading] = useState(false);
 
     const loadDocs = async () => {
+        if (!apiKey.trim()) {
+            setError('Provide the admin x-api-key first, or set VITE_ADMIN_API_KEY in frontend/.env.');
+            setDocsHtml('');
+            return;
+        }
+
         try {
             setLoading(true);
             setError('');
@@ -41,6 +47,12 @@ const ApiDocsPage = () => {
                         {loading ? 'Loading...' : 'Load docs'}
                     </button>
                 </div>
+
+                {!import.meta.env.VITE_ADMIN_API_KEY && (
+                    <p className="muted-copy">
+                        `VITE_ADMIN_API_KEY` is not set in frontend env, so you need to paste the key manually for local testing.
+                    </p>
+                )}
 
                 {error && <div className="error-message">{error}</div>}
 
