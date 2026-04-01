@@ -183,7 +183,7 @@ const MessagesPage = () => {
                 {feedback && <div className="success-message">{feedback}</div>}
             </section>
 
-            <div className="content-grid two-column-grid social-two-column">
+            <div className="content-grid two-column-grid social-two-column messages-page-layout">
                 <section className="page-panel glass-panel">
                     <div className="section-heading">
                         <div>
@@ -192,7 +192,7 @@ const MessagesPage = () => {
                         </div>
                     </div>
 
-                    <div className="social-inline-actions">
+                    <div className="conversation-launcher">
                         <select
                             value={friendSelector}
                             onChange={(event) => setFriendSelector(event.target.value)}
@@ -206,7 +206,12 @@ const MessagesPage = () => {
                                 </option>
                             ))}
                         </select>
-                        <button type="button" className="control-btn enter-btn" onClick={handleOpenFriendConversation}>
+                        <button
+                            type="button"
+                            className="control-btn enter-btn"
+                            onClick={handleOpenFriendConversation}
+                            disabled={!friendSelector}
+                        >
                             Open Chat
                         </button>
                     </div>
@@ -257,26 +262,39 @@ const MessagesPage = () => {
 
                     {selectedUser ? (
                         <>
-                            <div className="message-thread">
-                                {loadingMessages ? (
-                                    <div className="page-center-state social-empty-state">
-                                        <p>Loading messages...</p>
+                            <div className="message-thread-panel">
+                                <div className="message-thread-summary">
+                                    <div>
+                                        <strong>{selectedUser.displayName || selectedUser.username}</strong>
+                                        <span>@{selectedUser.username}</span>
                                     </div>
-                                ) : messages.length === 0 ? (
-                                    <div className="page-center-state social-empty-state">
-                                        <p>No messages yet. Send the first note to start this conversation.</p>
+                                    <div className="message-thread-summary-meta">
+                                        <span>{selectedUser.favoriteGame || 'Social Lobby'}</span>
+                                        <span>{messagePagination.totalItems} messages</span>
                                     </div>
-                                ) : (
-                                    messages.map((message) => (
-                                        <article
-                                            key={message.id}
-                                            className={`message-bubble${message.isMine ? ' message-bubble-mine' : ''}`}
-                                        >
-                                            <p>{message.content}</p>
-                                            <span>{new Date(message.createdAt).toLocaleString()}</span>
-                                        </article>
-                                    ))
-                                )}
+                                </div>
+
+                                <div className="message-thread">
+                                    {loadingMessages ? (
+                                        <div className="page-center-state social-empty-state">
+                                            <p>Loading messages...</p>
+                                        </div>
+                                    ) : messages.length === 0 ? (
+                                        <div className="page-center-state social-empty-state">
+                                            <p>No messages yet. Send the first note to start this conversation.</p>
+                                        </div>
+                                    ) : (
+                                        messages.map((message) => (
+                                            <article
+                                                key={message.id}
+                                                className={`message-bubble${message.isMine ? ' message-bubble-mine' : ''}`}
+                                            >
+                                                <p>{message.content}</p>
+                                                <span>{new Date(message.createdAt).toLocaleString()}</span>
+                                            </article>
+                                        ))
+                                    )}
+                                </div>
                             </div>
 
                             <div className="pagination-row">
@@ -308,9 +326,12 @@ const MessagesPage = () => {
                                     placeholder={`Write a message to ${selectedUser.displayName || selectedUser.username}`}
                                     rows="4"
                                 />
-                                <button type="submit" disabled={sending}>
-                                    {sending ? 'Sending...' : 'Send Message'}
-                                </button>
+                                <div className="message-composer-footer">
+                                    <span className="muted-copy">Message length: {draft.trim().length} characters</span>
+                                    <button type="submit" disabled={sending || !draft.trim()}>
+                                        {sending ? 'Sending...' : 'Send Message'}
+                                    </button>
+                                </div>
                             </form>
                         </>
                     ) : (

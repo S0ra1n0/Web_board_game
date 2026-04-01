@@ -1,6 +1,9 @@
 import React from 'react';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CornerDownLeft, HelpCircle, Undo2 } from 'lucide-react';
 
+const DIRECTIONAL_ICON_SIZE = 44;
+const SIDE_ICON_SIZE = 36;
+
 const GameControls = ({ onLeft, onRight, onEnter, onBack, onHint, onUp, onDown, showDirectionalPad = false }) => {
     return (
         <div className="game-controls glass-panel">
@@ -12,12 +15,12 @@ const GameControls = ({ onLeft, onRight, onEnter, onBack, onHint, onUp, onDown, 
                         disabled={!onUp}
                         className="control-btn control-pad-btn control-square-btn control-dpad-top"
                     >
-                        <ArrowUp size={22} />
+                        <ArrowUp size={DIRECTIONAL_ICON_SIZE} className="control-action-icon" strokeWidth={2.8} />
                     </button>
 
                     <div className="control-dpad-middle">
                         <button type="button" onClick={onLeft} className="control-btn control-pad-btn control-square-btn">
-                            <ArrowLeft size={22} />
+                            <ArrowLeft size={DIRECTIONAL_ICON_SIZE} className="control-action-icon" strokeWidth={2.8} />
                         </button>
                         <button
                             type="button"
@@ -25,10 +28,10 @@ const GameControls = ({ onLeft, onRight, onEnter, onBack, onHint, onUp, onDown, 
                             disabled={!onDown}
                             className="control-btn control-pad-btn control-square-btn"
                         >
-                            <ArrowDown size={22} />
+                            <ArrowDown size={DIRECTIONAL_ICON_SIZE} className="control-action-icon" strokeWidth={2.8} />
                         </button>
                         <button type="button" onClick={onRight} className="control-btn control-pad-btn control-square-btn">
-                            <ArrowRight size={22} />
+                            <ArrowRight size={DIRECTIONAL_ICON_SIZE} className="control-action-icon" strokeWidth={2.8} />
                         </button>
                     </div>
                 </div>
@@ -37,7 +40,7 @@ const GameControls = ({ onLeft, onRight, onEnter, onBack, onHint, onUp, onDown, 
                     <div className="control-pad-item">
                         <button type="button" onClick={onLeft} className="control-btn control-pad-btn control-square-btn">
                             <span className="control-direction-icon" aria-hidden="true">
-                                <ArrowLeft size={30} strokeWidth={2.8} />
+                                <ArrowLeft size={SIDE_ICON_SIZE} strokeWidth={2.8} />
                             </span>
                         </button>
                         <span className="control-pad-label">LEFT</span>
@@ -46,7 +49,7 @@ const GameControls = ({ onLeft, onRight, onEnter, onBack, onHint, onUp, onDown, 
                     <div className="control-pad-item">
                         <button type="button" onClick={onRight} className="control-btn control-pad-btn control-square-btn">
                             <span className="control-direction-icon" aria-hidden="true">
-                                <ArrowRight size={30} strokeWidth={2.8} />
+                                <ArrowRight size={SIDE_ICON_SIZE} strokeWidth={2.8} />
                             </span>
                         </button>
                         <span className="control-pad-label">RIGHT</span>

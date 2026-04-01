@@ -173,7 +173,7 @@ export const useSnakeGame = ({ onGameOver, gameMeta }) => {
     };
 
     const renderGrid = () => {
-        const grid = createGrid(COLORS.background);
+        const grid = createGrid();
 
         for (let row = 0; row < boardLayout.size; row += 1) {
             for (let col = 0; col < boardLayout.size; col += 1) {
@@ -253,16 +253,40 @@ export const useSnakeGame = ({ onGameOver, gameMeta }) => {
             boardSize: boardLayout.size,
             defaultTimer: timeLimit,
         },
+        guideSummary:
+            'Snake is an arcade survival run. Stay in motion, collect food to grow your score, and avoid crashing into walls or yourself.',
+        guideSections: [
+            {
+                title: 'Introduction',
+                body: 'The snake moves continuously once the round begins, so this game is about rhythm, route planning, and fast corrections.',
+            },
+            {
+                title: 'Objective',
+                body: 'Eat food to increase your score and survive as long as possible within the arena.',
+            },
+            {
+                title: 'Controls',
+                body: 'Use the d-pad to change direction.\nPress Enter to pause or resume the run.',
+            },
+            {
+                title: 'Rules',
+                body: 'The snake cannot reverse directly into its own body.\nTouching a wall or your own body ends the round.\nIf a timer is enabled, the round ends when time runs out.',
+            },
+            {
+                title: 'Survival Tips',
+                body: 'Leave yourself escape lanes.\nAvoid trapping the snake in tight loops near the walls.\nUse open space to recover before chasing the next food.',
+            },
+        ],
         instructions:
             `Snake starts immediately on a ${boardLayout.size}x${boardLayout.size} arena. Use the d-pad to steer, avoid walls and your own body, and press Enter to pause or resume.`,
         statusText,
         metaChips: [
-            `BOARD ${boardLayout.size}`,
-            `SCORE ${score}`,
+            `Board: ${boardLayout.size}x${boardLayout.size}`,
+            `Score: ${score}`,
             timeLimit
-                ? `LEFT ${formatDuration(Math.max(0, timeLimit - elapsedSeconds))}`
-                : `TIME ${formatDuration(elapsedSeconds)}`,
-            isRunning ? 'STATE LIVE' : hasEnded ? 'STATE OVER' : 'STATE PAUSED',
+                ? `Time left: ${formatDuration(Math.max(0, timeLimit - elapsedSeconds))}`
+                : `Time: ${formatDuration(elapsedSeconds)}`,
+            `Status: ${isRunning ? 'Live' : hasEnded ? 'Finished' : 'Paused'}`,
         ],
     };
 };

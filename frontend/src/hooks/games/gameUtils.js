@@ -3,7 +3,7 @@ export const GRID_SIZE = 20;
 export const COLORS = {
     background: '#020617',
     board: '#0f172a',
-    boardMuted: '#1e293b',
+    boardMuted: 'rgba(148, 163, 184, 0.4)',
     frame: '#334155',
     cursor: '#93c5fd',
     player: '#f97316',

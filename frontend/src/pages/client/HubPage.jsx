@@ -3,7 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import GameMatrix from '../../components/hub/GameMatrix';
 import GameControls from '../../components/hub/GameControls';
-import { getCaroArt, getTicTacToeArt, getMemoryArt, getDrawArt } from '../../utils/pixelArt';
+import {
+    getCaroArt,
+    getDrawArt,
+    getMatch3Art,
+    getMemoryArt,
+    getSnakeArt,
+    getTicTacToeArt,
+} from '../../utils/pixelArt';
 import { gameService } from '../../services/gameService';
 import { usePhysicalControls } from '../../hooks/games/engine/usePhysicalControls';
 import { normalizeGameKey } from '../../hooks/games/gameUtils';
@@ -13,7 +20,75 @@ const ART_MAP = {
     CARO4: getCaroArt,
     TICTACTOE: getTicTacToeArt,
     MEMORY: getMemoryArt,
+    SNAKE: getSnakeArt,
+    MATCH3: getMatch3Art,
     FREEDRAW: getDrawArt,
+};
+
+const HUB_HELP_CONTENT = {
+    CARO5: {
+        title: 'Caro 5 Preview',
+        summary: 'A larger connection game focused on long-term positioning and defensive reads.',
+        quickGuide: [
+            'Objective: connect 5 stones before the computer does.',
+            'Flow: move the cursor with the d-pad and press Enter on an empty tile.',
+            'Tip: build open lines while blocking the computer early.',
+        ],
+    },
+    CARO4: {
+        title: 'Caro 4 Preview',
+        summary: 'A slightly faster connection battle where shorter patterns become dangerous very quickly.',
+        quickGuide: [
+            'Objective: connect 4 stones in a row.',
+            'Flow: move with the d-pad and place a stone with Enter.',
+            'Tip: watch for double-threat setups on the next turn.',
+        ],
+    },
+    TICTACTOE: {
+        title: 'Tic-Tac-Toe Preview',
+        summary: 'A compact three-in-a-row duel with fast turns and simple rules.',
+        quickGuide: [
+            'Objective: complete a line of 3 before the computer.',
+            'Flow: move around the 3x3 grid and press Enter to place your mark.',
+            'Tip: center control is often the strongest opening.',
+        ],
+    },
+    SNAKE: {
+        title: 'Snake Preview',
+        summary: 'An arcade survival run where movement never stops for long.',
+        quickGuide: [
+            'Objective: eat food, grow longer, and avoid crashing.',
+            'Flow: use the d-pad to steer and press Enter to pause or resume.',
+            'Tip: leave yourself open lanes before chasing food near walls.',
+        ],
+    },
+    MATCH3: {
+        title: 'Match-3 Preview',
+        summary: 'A quick combo puzzle built around swapping adjacent tiles to create matches.',
+        quickGuide: [
+            'Objective: make lines of 3 or more matching tiles to score.',
+            'Flow: press Enter to select a tile, then Enter again on an adjacent tile to swap.',
+            'Tip: moves near the bottom can trigger stronger cascades.',
+        ],
+    },
+    MEMORY: {
+        title: 'Memory Preview',
+        summary: 'A card-matching challenge that rewards observation and recall.',
+        quickGuide: [
+            'Objective: reveal every matching pair before time runs out.',
+            'Flow: move tile by tile and press Enter to flip cards.',
+            'Tip: remember positions instead of guessing repeatedly.',
+        ],
+    },
+    FREEDRAW: {
+        title: 'Free Draw Preview',
+        summary: 'A creative pixel canvas for sketching patterns, icons, and simple art.',
+        quickGuide: [
+            'Objective: create your own drawing on the board.',
+            'Flow: move upward into the palette, choose a color with Enter, then paint on the canvas.',
+            'Tip: block shapes first, then refine details.',
+        ],
+    },
 };
 
 const HubPage = () => {
@@ -104,9 +179,23 @@ const HubPage = () => {
 
     const handleHint = () => {
         if (saveFoundModal || hintModal || !activeGame) return;
+
+        const activeGameKey = normalizeGameKey(activeGame.name || activeGame.id);
+        const helpContent = HUB_HELP_CONTENT[activeGameKey] || {
+            title: `${activeGame.name || 'Game'} Preview`,
+            summary: 'Use this preview to browse the game before starting a round.',
+            quickGuide: [
+                'Move left or right to choose a game.',
+                'Press Enter to open the highlighted game.',
+                'Open the in-game Help screen for the full rules and details.',
+            ],
+        };
+
         setHintModal({
-            title: `Welcome to Web Board Game Hub`,
-            description: `USE LEFT / RIGHT ARROWS to browse games.\nPRESS ENTER to select a game.\nPRESS HINT or H to close this dialog.`,
+            title: helpContent.title,
+            description:
+                `${helpContent.summary}\n\n` +
+                helpContent.quickGuide.join('\n'),
             onClose: () => setHintModal(null)
         });
     };
@@ -150,7 +239,7 @@ const HubPage = () => {
                     showDirectionalPad={false}
                 />
 
-                <div className="video-stage-caption">SELECT GAME (LEFT/RIGHT -{">"} ENTER)</div>
+                <div className="video-stage-caption">Choose a game with Left or Right, then press Enter</div>
 
                 <div className="video-stage-meta">
                     <span className="video-meta-chip">{activeGame.name || activeGame.title}</span>
