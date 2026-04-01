@@ -78,9 +78,9 @@ const UsersPage = () => {
                         <p>No users match your search.</p>
                     </div>
                 ) : (
-                    <div className="user-card-grid">
+                    <div className="user-card-grid users-search-list">
                         {users.map((player) => (
-                            <article key={player.id} className="user-card">
+                            <article key={player.id} className="user-card users-search-card">
                                 <div className="user-card-heading">
                                     <div className="user-card-avatar">
                                         {player.profilePicture ? (
