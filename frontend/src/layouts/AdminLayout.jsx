@@ -30,27 +30,29 @@ const AdminLayout = () => {
           <div className="admin-sidebar-footer">
             <div className="user-badge admin-sidebar-user">
               <strong>{user?.displayName || user?.username}</strong>
-              <span>{user?.email || "Administrator session"}</span>
+              <p className="muted-copy">{user?.email || "Administrator session"}</p>
             </div>
 
             <div className="admin-sidebar-actions">
               {["admin", "moderator"].includes(user?.role) && (
                 <button
                   type="button"
-                  className="control-btn action-btn topbar-btn admin-switch-btn"
+                  className="control-btn action-btn admin-switch-btn"
                   onClick={() => navigate("/hub")}
                 >
                   Switch to Main Page
                 </button>
               )}
-              <ThemeToggle />
-              <button
-                type="button"
-                className="control-btn action-btn topbar-btn admin-logout-btn"
-                onClick={handleLogout}
-              >
-                Logout
-              </button>
+              <div className="admin-footer-subgroup">
+                <ThemeToggle />
+                <button
+                  type="button"
+                  className="control-btn action-btn admin-logout-btn"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </button>
+              </div>
             </div>
           </div>
         </aside>

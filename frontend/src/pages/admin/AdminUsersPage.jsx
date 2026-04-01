@@ -86,18 +86,18 @@ const AdminUsersPage = () => {
                         <span className="section-kicker">User management</span>
                         <h2>Accounts</h2>
                     </div>
-                    <p className="muted-copy">{meta.totalItems} users matched</p>
+                    <span className="admin-users-matched">{meta.totalItems} users matched</span>
                 </div>
 
                 <div className="admin-filter-bar">
-                    <input value={search} onChange={(event) => { setPage(1); setSearch(event.target.value); }} placeholder="Search username or email" />
-                    <select value={role} onChange={(event) => { setPage(1); setRole(event.target.value); }} style={selectStyle}>
+                    <input className="admin-input" value={search} onChange={(event) => { setPage(1); setSearch(event.target.value); }} placeholder="Search username or email" />
+                    <select className="admin-select" value={role} onChange={(event) => { setPage(1); setRole(event.target.value); }}>
                         <option value="">All roles</option>
                         <option value="admin">Admin</option>
                         <option value="moderator">Moderator</option>
                         <option value="user">User</option>
                     </select>
-                    <select value={active} onChange={(event) => { setPage(1); setActive(event.target.value); }} style={selectStyle}>
+                    <select className="admin-select" value={active} onChange={(event) => { setPage(1); setActive(event.target.value); }}>
                         <option value="">All statuses</option>
                         <option value="true">Enabled</option>
                         <option value="false">Disabled</option>
@@ -176,14 +176,6 @@ const AdminUsersPage = () => {
             </section>
         </div>
     );
-};
-
-const selectStyle = {
-    background: 'var(--bg-secondary)',
-    border: '2px solid var(--glass-border)',
-    borderRadius: '12px',
-    padding: '0.75rem 1rem',
-    color: 'var(--text-primary)',
 };
 
 export default AdminUsersPage;
