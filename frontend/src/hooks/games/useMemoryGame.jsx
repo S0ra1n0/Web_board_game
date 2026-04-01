@@ -196,7 +196,8 @@ export const useMemoryGame = ({ onGameOver, gameMeta }) => {
         matched,
         cursor,
         moves,
-        elapsedSeconds,
+        elapsedSeconds: timeLimit ? Math.max(0, timeLimit - secondsLeft) : 0,
+        secondsLeft,
     });
 
     const loadState = (state) => {
