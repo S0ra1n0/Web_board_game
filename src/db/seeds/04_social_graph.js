@@ -1,4 +1,4 @@
-const minutesAgo = (minutes) => new Date(Date.now() - minutes * 60 * 1000);
+const at = (value) => new Date(value);
 
 /**
  * @param { import("knex").Knex } knex
@@ -16,9 +16,9 @@ exports.seed = async function (knex) {
     }, {});
 
     const friendships = [
-        ['user1', 'user2', minutesAgo(6000)],
-        ['user1', 'user3', minutesAgo(4200)],
-        ['user4', 'user5', minutesAgo(1800)],
+        ['user1', 'user2', at('2026-03-12T09:30:00Z')],
+        ['user1', 'user3', at('2026-03-13T14:15:00Z')],
+        ['user4', 'user5', at('2026-03-14T18:45:00Z')],
     ]
         .filter(([userOne, userTwo]) => userByName[userOne] && userByName[userTwo])
         .map(([userOne, userTwo, createdAt]) => {
@@ -37,9 +37,9 @@ exports.seed = async function (knex) {
     }
 
     const friendRequests = [
-        ['user1', 'user4', 'pending', minutesAgo(900)],
-        ['user2', 'user5', 'pending', minutesAgo(300)],
-        ['user5', 'user1', 'pending', minutesAgo(120)],
+        ['user1', 'user4', 'pending', at('2026-03-18T08:00:00Z')],
+        ['user2', 'user5', 'pending', at('2026-03-18T09:45:00Z')],
+        ['user5', 'user1', 'pending', at('2026-03-18T11:20:00Z')],
     ]
         .filter(([sender, receiver]) => userByName[sender] && userByName[receiver])
         .map(([sender, receiver, status, createdAt]) => ({
@@ -55,16 +55,16 @@ exports.seed = async function (knex) {
     }
 
     const messages = [
-        ['user1', 'user2', 'Ready for another Tic-Tac-Toe round tonight?', minutesAgo(95)],
-        ['user2', 'user1', 'Yes. I want a rematch after that draw.', minutesAgo(90)],
-        ['user1', 'user2', 'Deal. I also found a faster route through the hub menu.', minutesAgo(85)],
-        ['user2', 'user1', 'Send it over after class and I will test it.', minutesAgo(80)],
-        ['user1', 'user3', 'Can you review my memory board strategy?', minutesAgo(60)],
-        ['user3', 'user1', 'Sure. Focus on corner pairs first and the timer gets easier.', minutesAgo(57)],
-        ['user1', 'user3', 'That helps. I am trying to unlock the next badge.', minutesAgo(55)],
-        ['user4', 'user5', 'The free draw palette looks better in light mode.', minutesAgo(40)],
-        ['user5', 'user4', 'Agreed. I saved a board sketch for tomorrow.', minutesAgo(35)],
-        ['user4', 'user5', 'Let us present that version during the demo.', minutesAgo(30)],
+        ['user1', 'user2', 'Ready for another Tic-Tac-Toe round tonight?', at('2026-03-18T19:05:00Z')],
+        ['user2', 'user1', 'Yes. I want a rematch after that draw.', at('2026-03-18T19:10:00Z')],
+        ['user1', 'user2', 'Deal. I also found a faster route through the hub menu.', at('2026-03-18T19:15:00Z')],
+        ['user2', 'user1', 'Send it over after class and I will test it.', at('2026-03-18T19:20:00Z')],
+        ['user1', 'user3', 'Can you review my memory board strategy?', at('2026-03-19T08:40:00Z')],
+        ['user3', 'user1', 'Sure. Focus on corner pairs first and the timer gets easier.', at('2026-03-19T08:43:00Z')],
+        ['user1', 'user3', 'That helps. I am trying to unlock the next badge.', at('2026-03-19T08:48:00Z')],
+        ['user4', 'user5', 'The free draw palette looks better in light mode.', at('2026-03-19T16:00:00Z')],
+        ['user5', 'user4', 'Agreed. I saved a board sketch for tomorrow.', at('2026-03-19T16:07:00Z')],
+        ['user4', 'user5', 'Let us present that version during the demo.', at('2026-03-19T16:15:00Z')],
     ]
         .filter(([sender, recipient]) => userByName[sender] && userByName[recipient])
         .map(([sender, recipient, content, createdAt], index) => ({

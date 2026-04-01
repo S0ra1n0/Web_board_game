@@ -52,7 +52,7 @@ exports.seed = async function(knex) {
       display_name: 'Board Crafter',
       bio: 'Sketches ideas for new board layouts and testing flows.',
       location: 'Can Tho',
-      favorite_game: 'Draw',
+      favorite_game: 'Free Draw',
     },
   ];
 

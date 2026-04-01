@@ -17,37 +17,43 @@ exports.seed = async function (knex) {
             username: 'admin1',
             email: 'admin1@example.com',
             password_hash: admin1Hash,
-            role: 'admin'
+            role: 'admin',
+            is_active: true,
         },
         {
             username: 'user1',
             email: 'user1@example.com',
             password_hash: user1Hash,
-            role: 'user'
+            role: 'user',
+            is_active: true,
         },
         {
             username: 'user2',
             email: 'user2@example.com',
             password_hash: user1Hash,
-            role: 'moderator'
+            role: 'moderator',
+            is_active: true,
         },
         {
             username: 'user3',
             email: 'user3@example.com',
             password_hash: user1Hash,
-            role: 'user'
+            role: 'user',
+            is_active: true,
         },
         {
             username: 'user4',
             email: 'user4@example.com',
             password_hash: user1Hash,
-            role: 'user'
+            role: 'user',
+            is_active: true,
         },
         {
             username: 'user5',
             email: 'user5@example.com',
             password_hash: user1Hash,
-            role: 'user'
+            role: 'user',
+            is_active: false,
         }
     ]);
 };
