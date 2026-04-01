@@ -28,11 +28,15 @@ const drawLetter = (grid, letter, startRow, startCol, color) => {
     });
 };
 
-const drawWord = (grid, word, startRow, color) => {
+const drawWord = (grid, word, startRow, color, options = {}) => {
     const letterWidth = 4;
-    const spacing = 1;
+    const spacing = options.spacing ?? 1;
     const totalWidth = word.length * letterWidth + (word.length - 1) * spacing;
-    const startCol = Math.floor((GRID_SIZE - totalWidth) / 2);
+    const minCol = options.minCol ?? 0;
+    const maxCol = options.maxCol ?? GRID_SIZE - 1;
+    const usableWidth = maxCol - minCol + 1;
+    const centeredCol = minCol + Math.floor((usableWidth - totalWidth) / 2);
+    const startCol = Math.max(minCol, centeredCol);
 
     [...word].forEach((letter, index) => {
         drawLetter(grid, letter, startRow, startCol + index * (letterWidth + spacing), color);
@@ -69,9 +73,13 @@ const buildMenuArt = (label, accentColor) => {
     const grid = createEmptyGrid();
     const titleColor = '#ef4444';
 
-    drawWord(grid, label, 5, titleColor);
+    drawWord(grid, label, 5, titleColor, {
+        spacing: 0,
+        minCol: 2,
+        maxCol: 17,
+    });
     drawAccentDots(grid, '#93c5fd');
-    drawArrow(grid, 8, 15, accentColor);
+    drawArrow(grid, 14, 13, accentColor);
 
     return grid;
 };
