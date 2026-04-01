@@ -680,6 +680,32 @@ button:active {
   gap: 1.5rem;
 }
 
+.client-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.client-footer-copy,
+.client-footer-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.client-footer-copy strong {
+  font-size: 0.95rem;
+}
+
+.client-footer-copy span,
+.client-footer-meta span {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
 .admin-main-content {
   min-width: 0;
 }
@@ -1367,6 +1393,135 @@ button:disabled {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.ranking-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: end;
+}
+
+.ranking-filter-field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.ranking-filter-field span {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.ranking-scope-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.ranking-list,
+.review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.ranking-card,
+.review-card {
+  display: grid;
+  gap: 0.85rem;
+  align-items: center;
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  padding: 1rem 1.1rem;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+[data-theme='dark'] .ranking-card,
+[data-theme='dark'] .review-card {
+  background: rgba(15, 23, 42, 0.52);
+}
+
+.ranking-card {
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+}
+
+.ranking-rank-badge {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.7rem 0.9rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  color: white;
+  font-weight: 800;
+}
+
+.ranking-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.ranking-card-score {
+  font-weight: 800;
+  color: var(--accent-primary);
+}
+
+.review-shell {
+  gap: 1.5rem;
+}
+
+.review-two-column {
+  align-items: start;
+}
+
+.review-summary-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.review-block-title {
+  margin-top: 0.35rem;
+}
+
+.review-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.review-form button {
+  align-self: flex-start;
+}
+
+.review-card {
+  grid-template-columns: 1fr;
+}
+
+.review-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.review-card-header strong {
+  display: block;
+}
+
+.review-card-header span {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.review-card p {
+  margin: 0;
+}
+
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -1456,9 +1611,24 @@ button:disabled {
     justify-content: flex-start;
   }
 
+  .client-footer,
+  .ranking-toolbar,
+  .review-card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ranking-toolbar {
+    display: flex;
+  }
+
   .stat-grid,
   .user-card-meta,
   .social-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ranking-card {
     grid-template-columns: 1fr;
   }
 

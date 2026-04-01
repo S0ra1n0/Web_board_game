@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 
 const links = [
     { to: '/hub', label: 'Game Hub' },
+    { to: '/rankings', label: 'Rankings' },
     { to: '/profile', label: 'Profile' },
     { to: '/users', label: 'Find Users' },
     { to: '/friends', label: 'Friends' },

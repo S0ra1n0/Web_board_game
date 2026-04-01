@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import GameMatrix from '../../components/hub/GameMatrix';
 import GameControls from '../../components/hub/GameControls';
 import { gameService } from '../../services/gameService';
+import { reviewService } from '../../services/reviewService';
 import { usePhysicalControls } from '../../hooks/games/engine/usePhysicalControls';
 import { normalizeGameKey } from '../../hooks/games/gameUtils';
 import { useTicTacToeGame } from '../../hooks/games/useTicTacToeGame';
@@ -366,12 +367,29 @@ const GAME_RUNTIME_COMPONENTS = {
     FREEDRAW: DrawRuntime,
 };
 
+const REVIEW_PAGE_SIZE = 5;
+
 const GamePage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { token } = useAuth();
+    const { token, user } = useAuth();
     const [gameMeta, setGameMeta] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [reviews, setReviews] = useState([]);
+    const [reviewPagination, setReviewPagination] = useState({
+        page: 1,
+        pageSize: REVIEW_PAGE_SIZE,
+        totalItems: 0,
+        totalPages: 1,
+    });
+    const [reviewsLoading, setReviewsLoading] = useState(true);
+    const [reviewSaving, setReviewSaving] = useState(false);
+    const [reviewError, setReviewError] = useState('');
+    const [reviewSuccess, setReviewSuccess] = useState('');
+    const [reviewForm, setReviewForm] = useState({
+        rating: '5',
+        comment: '',
+    });
 
     useEffect(() => {
         if (!token) {
@@ -393,8 +411,63 @@ const GamePage = () => {
         fetchMeta();
     }, [id, navigate, token]);
 
+    const loadReviews = async (page = 1) => {
+        setReviewsLoading(true);
+
+        try {
+            const response = await reviewService.getReviews(id, page, REVIEW_PAGE_SIZE);
+            const nextReviews = response.items || [];
+            setReviews(nextReviews);
+            setReviewPagination({
+                page: response.page || page,
+                pageSize: response.pageSize || REVIEW_PAGE_SIZE,
+                totalItems: response.totalItems || 0,
+                totalPages: response.totalPages || 1,
+            });
+
+            const ownReview = nextReviews.find((item) => item.user_id === user?.id);
+            if (ownReview) {
+                setReviewForm({
+                    rating: String(ownReview.rating),
+                    comment: ownReview.comment || '',
+                });
+            }
+        } catch (error) {
+            setReviewError(error.message || 'Failed to load reviews');
+        } finally {
+            setReviewsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!token) {
+            return;
+        }
+
+        setReviewError('');
+        loadReviews(1);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id, token, user?.id]);
+
     const gameKey = useMemo(() => resolveGameKey(gameMeta, id), [gameMeta, id]);
     const RuntimeComponent = GAME_RUNTIME_COMPONENTS[gameKey];
+
+    const handleReviewSubmit = async (event) => {
+        event.preventDefault();
+        setReviewSaving(true);
+        setReviewError('');
+        setReviewSuccess('');
+
+        try {
+            await reviewService.addReview(id, Number(reviewForm.rating), reviewForm.comment);
+            setReviewSuccess('Review saved. Submitting again will update your previous rating.');
+            await loadReviews(1);
+        } catch (error) {
+            setReviewError(error.message || 'Failed to save review');
+        } finally {
+            setReviewSaving(false);
+        }
+    };
 
     if (loading || !gameMeta) {
         return <div className="video-stage-caption">LOADING GAME ASSETS...</div>;
@@ -411,7 +484,139 @@ const GamePage = () => {
         );
     }
 
-    return <RuntimeComponent key={`${gameKey}-${id}`} gameMeta={gameMeta} gameId={id} />;
+    return (
+        <div className="content-grid single-column-grid">
+            <RuntimeComponent key={`${gameKey}-${id}`} gameMeta={gameMeta} gameId={id} />
+
+            <section className="page-panel glass-panel review-shell">
+                <div className="section-heading">
+                    <div>
+                        <span className="section-kicker">Game Feedback</span>
+                        <h2>{gameMeta.name} rankings and reviews</h2>
+                    </div>
+                    <button
+                        type="button"
+                        className="control-btn nav-btn topbar-btn"
+                        onClick={() => navigate(`/rankings?gameId=${gameMeta.id}`)}
+                    >
+                        Open Full Rankings
+                    </button>
+                </div>
+
+                <div className="review-summary-row">
+                    <span className="video-meta-chip">Score Type: {gameMeta.score_type}</span>
+                    <span className="video-meta-chip">Board Size: {gameMeta.board_size}</span>
+                    <span className="video-meta-chip">Default Timer: {gameMeta.default_timer || 0}s</span>
+                    <span className="video-meta-chip">Reviews: {reviewPagination.totalItems}</span>
+                </div>
+
+                {reviewError && <div className="error-message">{reviewError}</div>}
+                {reviewSuccess && <div className="success-message">{reviewSuccess}</div>}
+
+                <div className="content-grid two-column-grid review-two-column">
+                    <div className="page-panel">
+                        <div>
+                            <span className="section-kicker">Your Rating</span>
+                            <h3 className="review-block-title">Leave a score and comment</h3>
+                        </div>
+
+                        <form className="review-form" onSubmit={handleReviewSubmit}>
+                            <label htmlFor="rating">Rating</label>
+                            <select
+                                id="rating"
+                                className="social-select"
+                                value={reviewForm.rating}
+                                onChange={(event) =>
+                                    setReviewForm((current) => ({
+                                        ...current,
+                                        rating: event.target.value,
+                                    }))
+                                }
+                            >
+                                <option value="5">5 stars</option>
+                                <option value="4">4 stars</option>
+                                <option value="3">3 stars</option>
+                                <option value="2">2 stars</option>
+                                <option value="1">1 star</option>
+                            </select>
+
+                            <label htmlFor="comment">Comment</label>
+                            <textarea
+                                id="comment"
+                                rows="5"
+                                value={reviewForm.comment}
+                                onChange={(event) =>
+                                    setReviewForm((current) => ({
+                                        ...current,
+                                        comment: event.target.value,
+                                    }))
+                                }
+                                placeholder={`Share what worked well in ${gameMeta.name} or what should improve.`}
+                            />
+
+                            <button type="submit" disabled={reviewSaving}>
+                                {reviewSaving ? 'Saving review...' : 'Save Review'}
+                            </button>
+                        </form>
+                    </div>
+
+                    <div className="page-panel">
+                        <div>
+                            <span className="section-kicker">Community Notes</span>
+                            <h3 className="review-block-title">Latest player comments</h3>
+                        </div>
+
+                        {reviewsLoading ? (
+                            <div className="page-center-state social-empty-state">
+                                <p>Loading reviews...</p>
+                            </div>
+                        ) : reviews.length === 0 ? (
+                            <div className="page-center-state social-empty-state">
+                                <p>No reviews yet. Be the first to rate this game.</p>
+                            </div>
+                        ) : (
+                            <div className="review-list">
+                                {reviews.map((review) => (
+                                    <article key={review.id} className="review-card">
+                                        <div className="review-card-header">
+                                            <div>
+                                                <strong>{review.username}</strong>
+                                                <span>{new Date(review.created_at).toLocaleString()}</span>
+                                            </div>
+                                            <span className="achievement-pill">{review.rating}/5</span>
+                                        </div>
+                                        <p>{review.comment || 'No written comment was provided.'}</p>
+                                    </article>
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="pagination-row">
+                            <button
+                                type="button"
+                                className="control-btn nav-btn pagination-btn"
+                                disabled={reviewsLoading || reviewPagination.page <= 1}
+                                onClick={() => loadReviews(reviewPagination.page - 1)}
+                            >
+                                Previous
+                            </button>
+                            <span className="pagination-meta">
+                                Page {reviewPagination.page} / {reviewPagination.totalPages}
+                            </span>
+                            <button
+                                type="button"
+                                className="control-btn nav-btn pagination-btn"
+                                disabled={reviewsLoading || reviewPagination.page >= reviewPagination.totalPages}
+                                onClick={() => loadReviews(reviewPagination.page + 1)}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    );
 };
 
 export default GamePage;

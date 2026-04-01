@@ -21,6 +21,7 @@ import ApiDocsPage from './pages/admin/ApiDocsPage';
 import FriendsPage from './pages/client/FriendsPage';
 import MessagesPage from './pages/client/MessagesPage';
 import AchievementsPage from './pages/client/AchievementsPage';
+import RankingsPage from './pages/client/RankingsPage';
 
 const LoadingScreen = () => (
     <div className="auth-container">
@@ -81,6 +82,7 @@ const App = () => (
                         <Route path="/friends" element={<FriendsPage />} />
                         <Route path="/messages" element={<MessagesPage />} />
                         <Route path="/achievements" element={<AchievementsPage />} />
+                        <Route path="/rankings" element={<RankingsPage />} />
                         <Route path="/user" element={<Navigate to="/hub" replace />} />
                     </Route>
                 </Route>
