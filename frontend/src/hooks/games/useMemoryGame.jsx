@@ -92,7 +92,7 @@ export const useMemoryGame = ({ onGameOver, gameMeta }) => {
         }, 350);
 
         return () => window.clearTimeout(timeoutId);
-    }, [boardLayout.size, hasEnded, matched.length, moves, secondsLeft, timeLimit]);
+    }, [boardLayout.size, hasEnded, matched.length]); // Removed secondsLeft and moves to prevent timeout clearing
 
     const moveCursor = (rowStep, colStep) => {
         if (isResolving) {
@@ -157,6 +157,7 @@ export const useMemoryGame = ({ onGameOver, gameMeta }) => {
                 const key = `${row}-${col}`;
                 const value = deck[row][col];
                 const isVisible = revealed.includes(key) || matched.includes(key);
+                
                 fillRect(
                     grid,
                     top,
@@ -167,8 +168,8 @@ export const useMemoryGame = ({ onGameOver, gameMeta }) => {
                 );
 
                 if (cursor.row === row && cursor.col === col) {
-                    fillRect(grid, top, left, tileSpan, 1, COLORS.cursor);
-                    fillRect(grid, top, left, 1, tileSpan, COLORS.cursor);
+                    // Fix: Fill entire tile span for cursor to avoid "missing light"
+                    fillRect(grid, top, left, tileSpan, tileSpan, COLORS.cursor);
                 }
             }
         }

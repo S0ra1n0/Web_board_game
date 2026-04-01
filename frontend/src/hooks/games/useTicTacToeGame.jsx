@@ -80,19 +80,26 @@ export const useTicTacToeGame = ({ onGameOver }) => {
         const nextWinner = checkWinner(board);
 
         if (!nextWinner || winner) {
-            return undefined;
+            return;
         }
 
         setWinner(nextWinner);
+    }, [board, winner]);
+
+    useEffect(() => {
+        if (!winner) {
+            return undefined;
+        }
 
         const timeoutId = window.setTimeout(() => {
-            const resultFlag = nextWinner === 'DRAW' ? 'DRAW' : nextWinner === playerSide ? 'WIN' : 'DEFEAT';
+            const resultFlag =
+                winner === 'DRAW' ? 'DRAW' : winner === playerSide ? 'WIN' : 'DEFEAT';
             const score = resultFlag === 'WIN' ? 100 : resultFlag === 'DRAW' ? 50 : 0;
             onGameOverRef.current(resultFlag, score, elapsedSeconds);
         }, 350);
 
         return () => window.clearTimeout(timeoutId);
-    }, [board, elapsedSeconds, playerSide, winner]);
+    }, [winner, playerSide]);
 
     const triggerAiMove = (currentBoard, aiSide) => {
         window.setTimeout(() => {
