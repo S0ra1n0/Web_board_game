@@ -85,10 +85,27 @@ The branch has been checked locally with the following:
 - admin game config updates
 - protected `/api-docs` with admin JWT + `x-api-key`
 
+## Deploy-Ready Assets
+
+The branch now includes provider config for the chosen HTTPS stack:
+
+- [render.yaml](../render.yaml) for Render backend provisioning
+- [frontend/vercel.json](../frontend/vercel.json) for Vercel SPA rewrites
+
+Env contract for deploy:
+
+- backend:
+  - `APP_ORIGIN` = frontend public URL
+  - `BACKEND_PUBLIC_URL` = backend public URL
+  - `API_KEY` = protected admin docs key
+- frontend:
+  - `VITE_API_BASE_URL` = backend public URL
+  - `VITE_ADMIN_API_KEY` = same value as backend `API_KEY`
+
 ## Remaining Submission Gap
 
 ### Still Required Before Calling the Project Fully Complete
-- HTTPS deployment if the final grading expects a live hosted system
+- Actual provider-side deployment on Vercel and Render if the final grading expects a live hosted system
 
 This is the only mandatory rubric item still marked open in [RUBRIC_CHECKLIST.md](./RUBRIC_CHECKLIST.md).
 
@@ -96,7 +113,7 @@ This is the only mandatory rubric item still marked open in [RUBRIC_CHECKLIST.md
 
 1. Deploy frontend and backend to HTTPS hosts.
 2. Set production env values:
-   - backend: `DATABASE_URL`, `JWT_SECRET`, `EMAIL_USER`, `EMAIL_PASS`, `APP_ORIGIN`, `API_KEY`
+   - backend: `DATABASE_URL`, `JWT_SECRET`, `EMAIL_USER`, `EMAIL_PASS`, `APP_ORIGIN`, `BACKEND_PUBLIC_URL`, `API_KEY`
    - frontend: `VITE_API_BASE_URL`, `VITE_ADMIN_API_KEY`
 3. Smoke test the hosted build:
    - login as user
