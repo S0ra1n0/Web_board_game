@@ -1,3 +1,6 @@
+const getBackendPublicUrl = () =>
+    (process.env.BACKEND_PUBLIC_URL || 'http://localhost:3000').replace(/\/+$/, '');
+
 const buildOpenApiDocument = () => ({
     openapi: '3.0.3',
     info: {
@@ -7,8 +10,8 @@ const buildOpenApiDocument = () => ({
     },
     servers: [
         {
-            url: process.env.APP_ORIGIN || 'http://localhost:3000',
-            description: 'Configured application origin',
+            url: getBackendPublicUrl(),
+            description: 'Configured backend public origin',
         },
     ],
     security: [
