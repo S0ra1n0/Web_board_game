@@ -3,7 +3,7 @@ import { COLORS, createGrid, formatDuration } from './gameUtils';
 
 const BOARD_START = 3;
 const CELL_SIZE = 4;
-const LINE_COLOR = '#475569';
+const LINE_COLOR = 'rgba(148, 163, 184, 0.68)';
 
 const WIN_LINES = [
     [0, 1, 2],
@@ -178,7 +178,7 @@ export const useTicTacToeGame = ({ onGameOver }) => {
     };
 
     const renderGrid = () => {
-        const grid = createGrid(COLORS.background);
+        const grid = createGrid();
         const firstLine = BOARD_START + CELL_SIZE;
         const secondLine = BOARD_START + CELL_SIZE * 2 + 1;
         const boardEnd = BOARD_START + CELL_SIZE * 3 + 1;
@@ -278,6 +278,30 @@ export const useTicTacToeGame = ({ onGameOver }) => {
         loadState,
         isDirty,
         requiresSideSelection: true,
+        guideSummary:
+            'A quick head-to-head grid duel where every move matters. You and the computer take turns placing marks, racing to create the first line of three.',
+        guideSections: [
+            {
+                title: 'Introduction',
+                body: 'Tic-Tac-Toe is a fast pattern game built around short turns, quick reads, and strong positioning.',
+            },
+            {
+                title: 'Objective',
+                body: 'Place three of your marks in a straight horizontal, vertical, or diagonal line before the computer does.',
+            },
+            {
+                title: 'Controls',
+                body: 'Use the d-pad to move the cursor across the 3x3 board.\nPress Enter to place your mark on an empty tile.',
+            },
+            {
+                title: 'Rules',
+                body: 'You can only place on empty spaces.\nTurns alternate between you and the computer.\nIf the board fills with no winning line, the round ends in a draw.',
+            },
+            {
+                title: 'Strategy Tips',
+                body: 'Take the center early when possible.\nWatch for two-in-a-row threats.\nBlock immediately if the computer can finish on the next turn.',
+            },
+        ],
         instructions:
             'Move the cursor with the arrow controls. Press Enter to place your symbol. Get three in a row before the computer does.',
         statusText: winner

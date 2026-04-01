@@ -244,7 +244,7 @@ export const useMatch3Game = ({ onGameOver, gameMeta }) => {
     };
 
     const renderGrid = () => {
-        const grid = createGrid(COLORS.background);
+        const grid = createGrid();
         const tileSpan = getTileSpan(boardLayout.cellSize);
 
         for (let row = 0; row < boardLayout.size; row += 1) {
@@ -316,6 +316,30 @@ export const useMatch3Game = ({ onGameOver, gameMeta }) => {
             boardSize: boardLayout.size,
             defaultTimer: timeLimit,
         },
+        guideSummary:
+            'Match-3 is a combo puzzle where you line up gems by swapping neighboring tiles. Better chains mean better scoring.',
+        guideSections: [
+            {
+                title: 'Introduction',
+                body: 'You are solving a compact puzzle board where each move should aim to create immediate matches or set up cascades.',
+            },
+            {
+                title: 'Objective',
+                body: 'Create lines of three or more matching tiles to score points before the timer ends.',
+            },
+            {
+                title: 'Controls',
+                body: 'Move the cursor with the d-pad.\nPress Enter once to select a tile.\nPress Enter again on an adjacent tile to attempt a swap.',
+            },
+            {
+                title: 'Rules',
+                body: 'Only adjacent tiles can be swapped.\nIf a swap does not create a match, it is cancelled.\nMatched tiles disappear, new tiles fall into place, and combo chains score additional points.',
+            },
+            {
+                title: 'Strategy Tips',
+                body: 'Look for moves near the bottom to trigger more cascades.\nThink one move ahead and set up future matches instead of only taking the first visible option.',
+            },
+        ],
         instructions:
             `Use the d-pad to position the cursor. Press Enter once to select a tile and again on an adjacent tile to swap. Make lines of three or more on a ${boardLayout.size}x${boardLayout.size} board before time runs out.`,
         statusText,

@@ -147,7 +147,7 @@ export const useMemoryGame = ({ onGameOver, gameMeta }) => {
     };
 
     const renderGrid = () => {
-        const grid = createGrid(COLORS.background);
+        const grid = createGrid();
         const tileSpan = getTileSpan(boardLayout.cellSize);
 
         for (let row = 0; row < boardLayout.size; row += 1) {
@@ -237,6 +237,30 @@ export const useMemoryGame = ({ onGameOver, gameMeta }) => {
             boardSize: boardLayout.size,
             defaultTimer: timeLimit,
         },
+        guideSummary:
+            'Memory Match is a pattern-recall challenge. Flip cards, remember their positions, and clear the board efficiently before the timer expires.',
+        guideSections: [
+            {
+                title: 'Introduction',
+                body: 'This game rewards observation and recall more than speed alone. The fewer wasted flips you make, the better your outcome.',
+            },
+            {
+                title: 'Objective',
+                body: 'Find every matching pair on the board before time runs out.',
+            },
+            {
+                title: 'Controls',
+                body: 'Use the d-pad to move the cursor tile by tile.\nPress Enter to flip the selected card.',
+            },
+            {
+                title: 'Rules',
+                body: 'Two cards stay visible only if they match.\nA mismatch flips back after a short delay.\nMatched pairs remain revealed until the board is cleared.',
+            },
+            {
+                title: 'Scoring Tips',
+                body: 'Try to finish with fewer moves and less time spent.\nWhen you reveal a new card, connect it to known positions before exploring more of the board.',
+            },
+        ],
         instructions:
             `Move around the deck with the d-pad and press Enter to flip a card. Find all matching color pairs on a ${boardLayout.size}x${boardLayout.size} board before time expires.`,
         statusText,

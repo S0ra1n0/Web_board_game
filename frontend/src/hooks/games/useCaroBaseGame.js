@@ -180,7 +180,7 @@ export const useCaroBaseGame = ({ onGameOver, targetLength, title, gameMeta }) =
     };
 
     const renderGrid = () => {
-        const grid = createGrid(COLORS.background);
+        const grid = createGrid();
 
         for (let row = 0; row < boardLayout.size; row += 1) {
             for (let col = 0; col < boardLayout.size; col += 1) {
@@ -267,6 +267,30 @@ export const useCaroBaseGame = ({ onGameOver, targetLength, title, gameMeta }) =
             boardSize: boardLayout.size,
             defaultTimer: 0,
         },
+        guideSummary:
+            `${title} is a larger-form connection game with more space, longer planning, and stronger positional play than Tic-Tac-Toe.`,
+        guideSections: [
+            {
+                title: 'Introduction',
+                body: `${title} expands the classic line-making formula onto a larger board where spacing, defense, and future threats matter more.`,
+            },
+            {
+                title: 'Objective',
+                body: `Connect ${targetLength} of your stones in a straight line before the computer does.`,
+            },
+            {
+                title: 'Controls',
+                body: 'Move the cursor with the d-pad.\nPress Enter to place a stone on the highlighted empty tile.\nChoose your side before the round starts.',
+            },
+            {
+                title: 'Rules',
+                body: 'You cannot place on an occupied cell.\nAfter your move, the computer immediately makes a reply move.\nThe game ends in victory, defeat, or draw when the board is full.',
+            },
+            {
+                title: 'Best Practices',
+                body: 'Build multiple threats instead of chasing only one line.\nProtect open-ended sequences.\nBlock the computer early before its line becomes unavoidable.',
+            },
+        ],
         instructions: `${title} uses the full d-pad. Move the cursor, press Enter to place a stone, and connect ${targetLength} in a row before the computer does on a ${boardLayout.size}x${boardLayout.size} board.`,
         statusText: winner
             ? winner === 'DRAW'

@@ -162,11 +162,19 @@ const GameRuntimeShell = ({ gameMeta, gameId, useGameHook }) => {
 
         setHintModal({
             title: `${gameMeta?.name || 'Game'} Guide`,
-            description:
-                `${gameInstance.instructions}\n\n` +
-                `Score Type: ${gameMeta?.score_type}\n` +
-                `Board Size: ${resolvedBoardSize}\n` +
-                `Default Timer: ${resolvedTimer ? `${resolvedTimer}s` : 'No limit'}`,
+            summary: gameInstance.guideSummary || gameInstance.instructions,
+            facts: [
+                { label: 'Score Type', value: gameMeta?.score_type || 'N/A' },
+                { label: 'Board Size', value: resolvedBoardSize ? `${resolvedBoardSize}x${resolvedBoardSize}` : 'N/A' },
+                { label: 'Default Timer', value: resolvedTimer ? `${resolvedTimer}s` : 'No limit' },
+            ],
+            sections:
+                gameInstance.guideSections || [
+                    {
+                        title: 'How To Play',
+                        body: gameInstance.instructions,
+                    },
+                ],
             onClose: () => setHintModal(null),
         });
     };
@@ -279,18 +287,53 @@ const GameRuntimeShell = ({ gameMeta, gameId, useGameHook }) => {
 
             {hintModal && (
                 <div className="modal-overlay" style={modalOverlayStyle}>
-                    <div className="glass-panel" style={modalCardStyle}>
+                    <div className="glass-panel" style={{ ...modalCardStyle, ...hintModalCardStyle }}>
                         <h2 style={{ fontSize: '2.2rem', marginBottom: '1.5rem' }}>{hintModal.title}</h2>
-                        <div
+
+                        <p
                             style={{
                                 color: 'var(--text-secondary)',
-                                marginBottom: '2rem',
+                                margin: '0 0 1.5rem',
                                 textAlign: 'left',
-                                whiteSpace: 'pre-line',
-                                lineHeight: '1.6',
+                                lineHeight: '1.7',
                             }}
                         >
-                            {hintModal.description}
+                            {hintModal.summary}
+                        </p>
+
+                        <div className="video-stage-meta" style={{ width: '100%', justifyContent: 'flex-start', marginBottom: '1.5rem' }}>
+                            {hintModal.facts?.map((fact) => (
+                                <span key={fact.label} className="video-meta-chip">
+                                    {fact.label}: {fact.value}
+                                </span>
+                            ))}
+                        </div>
+
+                        <div style={{ display: 'grid', gap: '1rem', marginBottom: '2rem' }}>
+                            {hintModal.sections?.map((section) => (
+                                <div
+                                    key={section.title}
+                                    style={{
+                                        textAlign: 'left',
+                                        padding: '1rem 1.1rem',
+                                        borderRadius: '18px',
+                                        border: '1px solid var(--glass-border)',
+                                        background: 'rgba(255,255,255,0.08)',
+                                    }}
+                                >
+                                    <h3 style={{ margin: '0 0 0.55rem', fontSize: '1rem' }}>{section.title}</h3>
+                                    <p
+                                        style={{
+                                            margin: 0,
+                                            color: 'var(--text-secondary)',
+                                            whiteSpace: 'pre-line',
+                                            lineHeight: '1.65',
+                                        }}
+                                    >
+                                        {section.body}
+                                    </p>
+                                </div>
+                            ))}
                         </div>
                         <button onClick={hintModal.onClose} className="control-btn nav-btn" style={fullWidthButtonStyle}>
                             Close
@@ -321,6 +364,12 @@ const modalCardStyle = {
     background: 'var(--bg-primary)',
     padding: '2.5rem',
     borderRadius: '24px',
+};
+
+const hintModalCardStyle = {
+    width: 'min(720px, calc(100vw - 2rem))',
+    maxHeight: 'min(88vh, 920px)',
+    overflowY: 'auto',
 };
 
 const largeButtonStyle = {

@@ -24,7 +24,7 @@ export const useDrawGame = ({ gameMeta }) => {
     const [isDirty, setIsDirty] = useState(false);
 
     const renderGrid = () => {
-        const grid = createGrid(COLORS.background);
+        const grid = createGrid();
 
         COLORS.palette.forEach((color, index) => {
             fillRect(grid, 0, 2 + index * 3, 2, 2, color);
@@ -171,6 +171,30 @@ export const useDrawGame = ({ gameMeta }) => {
             boardSize: boardLayout.size,
             defaultTimer: 0,
         },
+        guideSummary:
+            'Free Draw is a relaxed pixel canvas. Choose a color from the palette, move across the board, and paint or erase tiles to create your own design.',
+        guideSections: [
+            {
+                title: 'Introduction',
+                body: 'This mode is more of a creative sandbox than a competitive game. Use it to sketch icons, patterns, or simple pixel art.',
+            },
+            {
+                title: 'Objective',
+                body: 'There is no win condition. Your goal is simply to create or edit artwork on the canvas.',
+            },
+            {
+                title: 'Controls',
+                body: 'Use the d-pad to move around the canvas.\nMove upward from the top row to enter the color palette.\nPress Enter in palette mode to choose a color.\nPress Enter on the canvas to paint or erase the current pixel.',
+            },
+            {
+                title: 'Rules',
+                body: 'Painting the current color onto an empty tile fills it.\nPressing Enter on a tile that already has the selected color erases it.\nThe palette stays available at the top whenever you want to switch colors.',
+            },
+            {
+                title: 'Creative Tips',
+                body: 'Block in larger shapes first, then refine edges.\nUse color contrast to keep your drawing readable on the LED-style board.',
+            },
+        ],
         instructions:
             `Use the d-pad to move the cursor around the ${boardLayout.size}x${boardLayout.size} canvas. Move upward from the top row to enter palette mode, choose a color with Enter, then come back down to paint pixels.`,
         statusText: mode === 'palette' ? 'Palette mode active. Choose your paint color.' : 'Canvas mode active. Enter paints or erases the current pixel.',
