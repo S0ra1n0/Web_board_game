@@ -36,13 +36,24 @@ exports.getRankings = async ({ gameId, scope, userId, page, pageSize }) => {
     if (scope === 'me' && userId) {
         query = query.where('users.id', userId);
     } else if (scope === 'friends' && userId) {
-        // MOCK: Until Member 2 finishes `friendships` table, we treat 'friends' as 'global' or empty.
-        // Once `friendships` is ready, joining logic should be added here.
-        // query.join('friendships', function() {
-        //     this.on('users.id', '=', 'friendships.friend_id')
-        //         .andOn('friendships.user_id', '=', db.raw('?', [userId]))
-        //         .andOn('friendships.status', '=', db.raw('?', ['accepted']))
-        // })
+        const friendshipRows = await db('friendships')
+            .select('user_one_id', 'user_two_id')
+            .where((builder) => {
+                builder.where('user_one_id', userId).orWhere('user_two_id', userId);
+            });
+
+        const friendIds = friendshipRows
+            .map((row) => (row.user_one_id === userId ? row.user_two_id : row.user_one_id))
+            .filter(Boolean);
+
+        if (friendIds.length === 0) {
+            return {
+                rankings: [],
+                totalItems: 0,
+            };
+        }
+
+        query = query.whereIn('users.id', friendIds);
     }
 
     const allRecords = await query.clone().clearSelect().count('* as total_users').groupBy('users.id');
