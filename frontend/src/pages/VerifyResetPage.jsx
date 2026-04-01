@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -8,8 +8,15 @@ const VerifyResetPage = () => {
     const [status, setStatus] = useState('loading');
     const [message, setMessage] = useState('');
     const [username, setUsername] = useState('');
+    const hasVerifiedRef = useRef(false);
 
     useEffect(() => {
+        if (!token || hasVerifiedRef.current) {
+            return;
+        }
+
+        hasVerifiedRef.current = true;
+
         const verify = async () => {
             try {
                 const result = await verifyPasswordReset(token);

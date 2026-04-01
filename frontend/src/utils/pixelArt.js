@@ -1,106 +1,85 @@
 const GRID_SIZE = 20;
 
+const FONT = {
+    A: ['0110', '1001', '1111', '1001', '1001'],
+    C: ['0111', '1000', '1000', '1000', '0111'],
+    D: ['1110', '1001', '1001', '1001', '1110'],
+    E: ['1111', '1110', '1100', '1110', '1111'],
+    I: ['1111', '0010', '0010', '0010', '1111'],
+    M: ['1001', '1111', '1111', '1001', '1001'],
+    O: ['0110', '1001', '1001', '1001', '0110'],
+    R: ['1110', '1001', '1110', '1010', '1001'],
+    T: ['1111', '0010', '0010', '0010', '0010'],
+    W: ['1001', '1001', '1111', '1111', '1001'],
+};
+
 const createEmptyGrid = () => Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(null));
 
-export const getCaroArt = () => {
-    const grid = createEmptyGrid();
-    const colorX = '#ef4444'; 
-    const colorO = '#3b82f6';
-    const color5 = '#22c55e';
+const drawLetter = (grid, letter, startRow, startCol, color) => {
+    const pattern = FONT[letter];
+    if (!pattern) return;
 
-    // Small X (Top Left)
-    grid[3][3]=colorX; grid[3][6]=colorX;
-    grid[4][4]=colorX; grid[4][5]=colorX;
-    grid[5][4]=colorX; grid[5][5]=colorX;
-    grid[6][3]=colorX; grid[6][6]=colorX;
-
-    // Small O (Top Right)
-    grid[3][13]=colorO; grid[3][14]=colorO;
-    grid[4][12]=colorO; grid[4][15]=colorO;
-    grid[5][12]=colorO; grid[5][15]=colorO;
-    grid[6][13]=colorO; grid[6][14]=colorO;
-
-    // Number 5 (Bottom Center)
-    for(let i=7; i<=11; i++) grid[10][i] = color5; // Top
-    grid[11][7] = color5;
-    grid[12][7] = color5;
-    for(let i=7; i<=11; i++) grid[13][i] = color5; // Mid
-    grid[14][11] = color5;
-    grid[15][11] = color5;
-    grid[16][11] = color5;
-    for(let i=7; i<=10; i++) grid[17][i] = color5; // Bot
-    
-    return grid;
+    pattern.forEach((rowBits, rowIndex) => {
+        [...rowBits].forEach((bit, colIndex) => {
+            if (bit === '1' && grid[startRow + rowIndex] && grid[startRow + rowIndex][startCol + colIndex] !== undefined) {
+                grid[startRow + rowIndex][startCol + colIndex] = color;
+            }
+        });
+    });
 };
 
-// Tic-Tac-Toe: Centered X on the left, O on the right
-export const getTicTacToeArt = () => {
-    const grid = createEmptyGrid();
-    const colorX = '#ef4444'; // red
-    const colorO = '#3b82f6'; // blue
-    
-    // Draw X (Rows 7..12, Cols 3..8)
-    for (let offset=0; offset<=5; offset++) {
-        grid[7+offset][3+offset] = colorX;
-        grid[7+offset][8-offset] = colorX;
-    }
-    
-    // Draw O (Rows 7..12, Cols 11..16)
-    for (let offset=0; offset<=5; offset++) {
-        if (offset===0 || offset===5) {
-            grid[7+offset][12] = colorO;
-            grid[7+offset][13] = colorO;
-            grid[7+offset][14] = colorO;
-            grid[7+offset][15] = colorO;
-        } else {
-            grid[7+offset][11] = colorO;
-            grid[7+offset][16] = colorO;
+const drawWord = (grid, word, startRow, color) => {
+    const letterWidth = 4;
+    const spacing = 1;
+    const totalWidth = word.length * letterWidth + (word.length - 1) * spacing;
+    const startCol = Math.floor((GRID_SIZE - totalWidth) / 2);
+
+    [...word].forEach((letter, index) => {
+        drawLetter(grid, letter, startRow, startCol + index * (letterWidth + spacing), color);
+    });
+};
+
+const drawArrow = (grid, startRow, startCol, color) => {
+    const pixels = [
+        [0, 0], [1, 1], [2, 2], [1, 3], [0, 4],
+        [1, 1], [1, 2], [1, 3],
+    ];
+
+    pixels.forEach(([rowOffset, colOffset]) => {
+        const row = startRow + rowOffset;
+        const col = startCol + colOffset;
+        if (grid[row] && grid[row][col] !== undefined) {
+            grid[row][col] = color;
         }
-    }
-    return grid;
+    });
 };
 
-// Memory: Embellished question mark without sparkles
-export const getMemoryArt = () => {
+const drawAccentDots = (grid, color) => {
+    const dots = [
+        [12, 4], [13, 5], [12, 6], [13, 7],
+        [12, 12], [13, 13], [12, 14], [13, 15],
+    ];
+
+    dots.forEach(([row, col]) => {
+        grid[row][col] = color;
+    });
+};
+
+const buildMenuArt = (label, accentColor) => {
     const grid = createEmptyGrid();
-    const c = '#a855f7'; // Main purple
-    
-    // Top curve
-    grid[4][8]=c; grid[4][9]=c; grid[4][10]=c; grid[4][11]=c;
-    grid[5][7]=c; grid[5][8]=c; grid[5][11]=c; grid[5][12]=c;
-    
-    // Extend top left curve down left by 2 pixels
-    grid[6][6]=c; grid[6][7]=c;
-    
-    // Right bulge
-    grid[6][12]=c; grid[6][13]=c;
-    grid[7][11]=c; grid[7][12]=c;
-    
-    // Diagonal down
-    grid[8][10]=c; grid[8][11]=c;
-    
-    // Straight down stem
-    grid[9][9]=c; grid[9][10]=c;
-    grid[10][9]=c; grid[10][10]=c;
-    grid[11][9]=c; grid[11][10]=c;
-    
-    // Dot portion
-    grid[13][9]=c; grid[13][10]=c;
-    grid[14][9]=c; grid[14][10]=c;
-    
+    const titleColor = '#ef4444';
+
+    drawWord(grid, label, 5, titleColor);
+    drawAccentDots(grid, '#93c5fd');
+    drawArrow(grid, 8, 15, accentColor);
+
     return grid;
 };
 
-// Draw: Centered smiley face
-export const getDrawArt = () => {
-    const grid = createEmptyGrid();
-    const c = '#eab308'; 
-    grid[6][7]=c; grid[6][12]=c;
-    grid[7][7]=c; grid[7][12]=c;
-    
-    grid[10][6]=c; grid[11][7]=c; 
-    grid[12][8]=c; grid[12][9]=c; grid[12][10]=c; grid[12][11]=c; 
-    grid[11][12]=c; grid[10][13]=c;
-    return grid;
-};
+export const getCaroArt = () => buildMenuArt('CARO', '#facc15');
 
+export const getTicTacToeArt = () => buildMenuArt('TTT', '#60a5fa');
+
+export const getMemoryArt = () => buildMenuArt('MEM', '#c084fc');
+
+export const getDrawArt = () => buildMenuArt('DRAW', '#f59e0b');

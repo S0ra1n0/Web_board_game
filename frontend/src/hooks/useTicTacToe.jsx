@@ -1,10 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 
 const GRID_SIZE = 20;
-const COLOR_LINE = 'var(--text-secondary)'; 
+const BOARD_START = 3;
+const CELL_SIZE = 4;
+const COLOR_LINE = '#111827';
 const COLOR_X = '#ef4444'; // Red
 const COLOR_O = '#3b82f6'; // Blue
-const COLOR_CURSOR = 'rgba(255, 255, 255, 0.15)'; 
+const COLOR_CURSOR = '#93c5fd';
+
+const getCellOrigin = (idx) => ({
+    rowStart: BOARD_START + Math.floor(idx / 3) * (CELL_SIZE + 1),
+    colStart: BOARD_START + (idx % 3) * (CELL_SIZE + 1),
+});
 
 export const useTicTacToe = ({ onGameOver }) => {
     const [board, setBoard] = useState(Array(9).fill(null));
@@ -13,16 +20,47 @@ export const useTicTacToe = ({ onGameOver }) => {
     const [winner, setWinner] = useState(null);
     const [playerSide, setPlayerSide] = useState('X'); // 'X' or 'O'
     const [isDirty, setIsDirty] = useState(false);
+    const [showCursor, setShowCursor] = useState(true);
 
     // Lateral movement
     const handleLeft = () => {
         if (!isPlayerTurn || winner) return;
-        setCursorIdx(prev => (prev === 0 ? 8 : prev - 1));
+        setCursorIdx((prev) => {
+            const row = Math.floor(prev / 3);
+            const col = prev % 3;
+            const nextCol = col === 0 ? 2 : col - 1;
+            return row * 3 + nextCol;
+        });
     };
 
     const handleRight = () => {
         if (!isPlayerTurn || winner) return;
-        setCursorIdx(prev => (prev === 8 ? 0 : prev + 1));
+        setCursorIdx((prev) => {
+            const row = Math.floor(prev / 3);
+            const col = prev % 3;
+            const nextCol = col === 2 ? 0 : col + 1;
+            return row * 3 + nextCol;
+        });
+    };
+
+    const handleUp = () => {
+        if (!isPlayerTurn || winner) return;
+        setCursorIdx((prev) => {
+            const row = Math.floor(prev / 3);
+            const col = prev % 3;
+            const nextRow = row === 0 ? 2 : row - 1;
+            return nextRow * 3 + col;
+        });
+    };
+
+    const handleDown = () => {
+        if (!isPlayerTurn || winner) return;
+        setCursorIdx((prev) => {
+            const row = Math.floor(prev / 3);
+            const col = prev % 3;
+            const nextRow = row === 2 ? 0 : row + 1;
+            return nextRow * 3 + col;
+        });
     };
 
     const onGameOverRef = useRef(onGameOver);
@@ -51,11 +89,28 @@ export const useTicTacToe = ({ onGameOver }) => {
         if (foundWinner) {
             setWinner(foundWinner);
             const timer = setTimeout(() => {
-                onGameOverRef.current(foundWinner);
+                const resultFlag = foundWinner === 'DRAW' ? 'DRAW' : (foundWinner === playerSide ? 'WIN' : 'DEFEAT');
+                const mockScore = foundWinner === playerSide ? 100 : 0;
+                const mockDuration = 45; // 45s mock time
+                onGameOverRef.current(resultFlag, mockScore, mockDuration);
             }, 300);
             return () => clearTimeout(timer);
         }
     }, [board]);
+
+    useEffect(() => {
+        if (!isPlayerTurn || winner) {
+            setShowCursor(true);
+            return undefined;
+        }
+
+        setShowCursor(true);
+        const interval = window.setInterval(() => {
+            setShowCursor((prev) => !prev);
+        }, 250);
+
+        return () => window.clearInterval(interval);
+    }, [cursorIdx, isPlayerTurn, winner]);
 
     const triggerAiMove = (currentBoard, overrideAiSymbol) => {
         const aiSymbol = overrideAiSymbol || (playerSide === 'X' ? 'O' : 'X');
@@ -89,32 +144,42 @@ export const useTicTacToe = ({ onGameOver }) => {
     const renderGrid = () => {
         const grid = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(null));
 
-        for (let i = 0; i < GRID_SIZE; i++) {
-            grid[6][i] = COLOR_LINE; grid[13][i] = COLOR_LINE;
-            grid[i][6] = COLOR_LINE; grid[i][13] = COLOR_LINE;
+        const firstLine = BOARD_START + CELL_SIZE;
+        const secondLine = BOARD_START + CELL_SIZE * 2 + 1;
+        const boardEnd = BOARD_START + CELL_SIZE * 3 + 1;
+
+        for (let i = BOARD_START; i <= boardEnd; i++) {
+            grid[firstLine][i] = COLOR_LINE;
+            grid[secondLine][i] = COLOR_LINE;
+            grid[i][firstLine] = COLOR_LINE;
+            grid[i][secondLine] = COLOR_LINE;
         }
 
-        const cRowStr = Math.floor(cursorIdx / 3) * 7;
-        const cColStr = (cursorIdx % 3) * 7;
-        for (let r = 0; r < 6; r++) {
-            for (let c = 0; c < 6; c++) {
-               grid[cRowStr + r][cColStr + c] = COLOR_CURSOR;
+        if (showCursor) {
+            const { rowStart, colStart } = getCellOrigin(cursorIdx);
+            for (let r = 0; r < CELL_SIZE; r++) {
+                for (let c = 0; c < CELL_SIZE; c++) {
+                    grid[rowStart + r][colStart + c] = COLOR_CURSOR;
+                }
             }
         }
 
         board.forEach((val, idx) => {
-            const rowStart = Math.floor(idx / 3) * 7;
-            const colStart = (idx % 3) * 7;
+            const { rowStart, colStart } = getCellOrigin(idx);
             if (val === 'X') {
-                for(let i=1; i<=4; i++) {
+                for (let i = 0; i < CELL_SIZE; i++) {
                     grid[rowStart + i][colStart + i] = COLOR_X;
-                    grid[rowStart + i][colStart + 5 - i] = COLOR_X;
+                    grid[rowStart + i][colStart + (CELL_SIZE - 1 - i)] = COLOR_X;
                 }
             } else if (val === 'O') {
-                grid[rowStart+1][colStart+2]=COLOR_O; grid[rowStart+1][colStart+3]=COLOR_O;
-                grid[rowStart+2][colStart+1]=COLOR_O; grid[rowStart+2][colStart+4]=COLOR_O;
-                grid[rowStart+3][colStart+1]=COLOR_O; grid[rowStart+3][colStart+4]=COLOR_O;
-                grid[rowStart+4][colStart+2]=COLOR_O; grid[rowStart+4][colStart+3]=COLOR_O;
+                grid[rowStart][colStart + 1] = COLOR_O;
+                grid[rowStart][colStart + 2] = COLOR_O;
+                grid[rowStart + 1][colStart] = COLOR_O;
+                grid[rowStart + 1][colStart + 3] = COLOR_O;
+                grid[rowStart + 2][colStart] = COLOR_O;
+                grid[rowStart + 2][colStart + 3] = COLOR_O;
+                grid[rowStart + 3][colStart + 1] = COLOR_O;
+                grid[rowStart + 3][colStart + 2] = COLOR_O;
             }
         });
 
@@ -161,6 +226,8 @@ export const useTicTacToe = ({ onGameOver }) => {
         gridPixels: renderGrid(),
         handleLeft,
         handleRight,
+        handleUp,
+        handleDown,
         handleEnter,
         reset,
         getState,

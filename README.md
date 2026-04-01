@@ -1,148 +1,248 @@
 # Web Board Game Project
 
-A full-stack web application featuring a role-based authentication system, built as a starting foundation for a collection of web-based board games. 
+Single-page board game platform for the Web Application Programming course. The project uses a React SPA frontend, an Express + Knex backend, and a Supabase Postgres database. It includes authentication, separate client/admin experiences, seven playable games, social features, admin management, protected API docs, and deterministic demo seeds.
 
-## 🛠️ Tech Stack
+## Stack
 
-**Frontend:**
-- **React 18** (Vite for fast bundling)
-- **React Router v6** (Client-side routing and protected routes)
-- **Lucide React** (Icons)
-- **Vanilla CSS** (Premium Glassmorphism & Light/Dark mode design)
+### Frontend
+- React + Vite
+- React Router
+- Context API for auth and theme state
+- Vanilla CSS with light/dark mode
 
-**Backend:**
-- **Node.js & Express.js** (Server framework)
-- **Knex.js** (SQL Query Builder & Migrations)
-- **PostgreSQL** (Hosted on Supabase)
-- **Bcryptjs & JSON Web Tokens (JWT)** (Secure authentication and RBAC)
+### Backend
+- Node.js + Express
+- Knex
+- PostgreSQL on Supabase
+- JWT + bcrypt
+- Nodemailer for verify/reset flows
 
----
+## Core Features
 
-## 📂 Project Structure
+### Authentication
+- Login, register, verify-register, reset-password, verify-reset
+- JWT-based route protection
+- Role-aware redirects for `user`, `moderator`, and `admin`
 
-### `/frontend` (React Single Page Application)
-Contains the front-facing user interface of the application.
+### Client Features
+- Retro matrix-based hub with 5-button interaction
+- 7 playable games:
+  - Tic-Tac-Toe
+  - Caro 5
+  - Caro 4
+  - Snake
+  - Match-3
+  - Memory
+  - Free Draw
+- Per-game help, score/result UI, save/load, and review panel
+- Profile management
+- User search
+- Friend requests and friends list
+- Messaging without real-time transport
+- Achievements
+- Rankings with `global`, `friends`, and `me` scopes plus pagination
+- Light/Dark mode
 
-- `/src/pages/`
-  - `LoginPage.jsx`: UI for user and admin login. Handles role-based redirects.
-  - `RegisterPage.jsx`: UI for creating new user accounts. Includes validation constraints (length). Submitting securely generates an email verification link using Nodemailer.
-  - `VerifyRegisterPage.jsx`: UI that catches the `/:token` registration link. On validation, permanently saves the user into the database and issues success screen.
-  - `ResetPasswordPage.jsx`: UI for requesting a password reset. Sends a verification token link to the user's email.
-  - `VerifyResetPage.jsx`: UI that catches the emailed `/:token` password-reset link and finalizes the password reset securely.
-  - `UserHome.jsx`: Protected dashboard acting as a fully-featured retro Game Hub Virtual Console with a 20x20 LED pixel matrix, custom sidebars, and dynamic leaderboards.
-  - `AdminHome.jsx`: Protected dashboard for admin users only.
-  
-- `/src/components/hub/`
-  - `GameMatrix.jsx`: Core display logic for the 20x20 visual matrix, which renders actual game states like Tic-Tac-Toe and Menu Pixel Art.
-  - `GameControls.jsx`: Emulated physical console buttons providing strictly Left, Right, Enter, Back, and Hint inputs to navigate the UI.
-  - `SocialSidebar.jsx`: Displays user profile cards with real-time ranks, achievement trackers, and friends lists.
-  - `StatsSidebar.jsx`: Live query system pulling global leaderboards securely from the PostgreSQL backend.
-  
-- `/src/hooks/`
-  - `useTicTacToe.jsx`: Standalone game logic module that maps Tic-Tac-Toe moves exclusively to the 5-button interface and overlays its graphics directly onto the Matrix.
-- `/src/context/`
-  - `AuthContext.jsx`: Global state manager. Handles JWT tokens in `localStorage`, `user` object access, API communication for auth, and Theme configuration (Light/Dark mode).
-- `/src/styles/`
-  - `index.css`: Global design system defining CSS variables, glassmorphism UI utility classes, and layout structures.
-- `/src/App.jsx`: Primary component. Configures `react-router-dom` and the `ProtectedRoute` wrapper to restrict dashboard access based on `user.role` context.
+### Admin Features
+- Admin dashboard
+- User management with role and active-status controls
+- Game management with enable/disable, board size, timer, score type, and instructions
+- Statistics page with popularity, growth, review distribution, and totals
+- Protected API docs page that requires both admin JWT and `x-api-key`
 
-### `/src` (Express Backend Application)
-Contains the REST API server, database configurations, routing, and controllers.
+## Routes
 
-- `/controllers/`
-  - `authController.js`: Core logic for auth... Uses bcrypt hashing and JWT.
-  - `userController.js`: Manages secure endpoint queries for fetching Global Leaderboards and tracking/upserting live player stat scores and wins inside the Postgres `user_stats` table.
-- `/middleware/`
-  - `authMiddleware.js`: Security layer. `protect` verifies if requests have a valid JWT. `restrictTo` acts as a factory function to block access unless the user matches specific roles (e.g., 'admin').
-- `/routes/`
-  - `authRoutes.js`: Maps endpoints like `/api/auth/login` to the appropriate controller methods.
-  - `userRoutes.js`: Exposes `/stats` and `/leaderboard/:game_id` endpoints.
-  - `adminRoutes.js`: Example routes meant exclusively for admins, secured entirely by `authMiddleware.restrictTo('admin')`.
-- `/db/` 
-  - `db.js`: Initializes database connection via Knex.
-  - `/migrations/`: SQL definition files that construct and alter the database schema (users, games, sessions, user_stats, ratings).
-  - `/seeds/`: Scripts to wipe database tables and insert starting data.
+### Public
+- `/login`
+- `/register`
+- `/reset-password`
+- `/verify-register/:token`
+- `/verify-reset/:token`
 
----
+### Client
+- `/hub`
+- `/games/:id`
+- `/profile`
+- `/users`
+- `/friends`
+- `/messages`
+- `/achievements`
+- `/rankings`
 
-## 🚀 Getting Started
+### Admin
+- `/admin`
+- `/admin/users`
+- `/admin/games`
+- `/admin/stats`
+- `/admin/api-docs`
 
-### Prerequisites
-Before you begin, ensure you have the following installed:
-- **Node.js** (v18 or higher recommended)
-- **PostgreSQL** database (Local or Hosted like [Supabase](https://supabase.com/))
+## Environment Variables
 
-### Environment Variables
-You will need to create `.env` files in both the root and frontend directories.
-Example files (`.env.example`) have been provided for both.
+### Backend `.env`
+Copy [`.env.example`](./.env.example) to `.env` and fill these values:
 
-#### 1. Backend (.env)
-1. Copy `.env.example` to a new file named `.env` in the root:
-   ```bash
-   cp .env.example .env
-   ```
-2. Fill in the required variables (DATABASE_URL, JWT_SECRET, EMAIL_USER/PASS).
+```env
+PORT=3000
+DATABASE_URL=postgresql://...
+NODE_ENV=development
+JWT_SECRET=replace-with-a-long-random-secret
+EMAIL_USER=your_email@example.com
+EMAIL_PASS=your_email_app_password
+APP_ORIGIN=http://localhost:5173
+BACKEND_PUBLIC_URL=http://localhost:3000
+API_KEY=replace-with-a-private-admin-key
+```
 
-#### 2. Frontend (frontend/.env)
-1. Navigate to the frontend directory and copy its `.env.example`:
-   ```bash
-   cd frontend
-   cp .env.example .env
-   ```
-2. By default, it uses `http://localhost:3000` for the API. You can update `VITE_API_URL` if your backend is running on a different port.
+### Frontend `frontend/.env`
+Copy [frontend/.env.example](./frontend/.env.example) to `frontend/.env`:
 
-### Installation
+```env
+VITE_API_BASE_URL=
+VITE_ADMIN_API_KEY=replace-with-the-same-admin-key
+```
 
-1. **Install Backend Dependencies**
-   From the root directory of the project:
-   ```bash
-   npm install
-   ```
+Notes:
+- Leave `VITE_API_BASE_URL` empty for local Vite proxy mode.
+- `APP_ORIGIN` must be the frontend public URL. It is used for email verify/reset links and CORS.
+- `BACKEND_PUBLIC_URL` must be the backend public URL. It is used in the protected OpenAPI document.
+- `API_KEY` and `VITE_ADMIN_API_KEY` must match for `/admin/api-docs`.
 
-2. **Install Frontend Dependencies**
-   Navigate to the frontend folder and install its dependencies:
-   ```bash
-   cd frontend
-   npm install
-   ```
+## Installation
 
-3. **Database Setup**
-   Ensure your PostgreSQL database is running and the `DATABASE_URL` is set correctly in your `.env` file. Then, run the database migrations and optionally the seed script:
-   ```bash
-   # In the root directory
-   npx knex migrate:latest
-   npx knex seed:run
-   ```
+### 1. Install dependencies
+From the project root:
 
-## 🚀 How to Run
+```powershell
+npm install
+cd frontend
+npm install
+```
 
-You need to run two separate development servers to test the full application.
+### 2. Run migrations and seeds
+Back at the project root:
 
-### 1. Backend Server
-From the root directory of the project:
-```bash
-# Start the Express server to handle APIs and connect to the database
+```powershell
+npx knex migrate:latest
+npx knex seed:run
+```
+
+### 3. Start the backend
+```powershell
 npm run dev
 ```
-*The backend server will run on port 3000.*
 
-### 2. Frontend Development Server
-Open a **new, separate terminal tab**, navigate to the frontend folder, and start Vite:
-```bash
+### 4. Start the frontend
+In a second terminal:
+
+```powershell
 cd frontend
 npm run dev
 ```
-*The React server will start on port 5173. Open `http://localhost:5173` in your browser.*
 
----
-
-## 👤 Default Accounts
-
-If you run `npx knex seed:run` in the root directory, your database `users` table will reset and install the two following default accounts:
+## Default Seed Accounts
 
 | Role | Email | Password |
 |---|---|---|
-| **Admin** | admin@example.com | admin123 |
-| **User** | user1@example.com | user123 |
+| Admin | `admin1@example.com` | `admin123` |
+| User | `user1@example.com` | `user123` |
+| User | `user2@example.com` | `user123` |
+| User | `user3@example.com` | `user123` |
+| User | `user4@example.com` | `user123` |
+| User | `user5@example.com` | `user123` |
 
-> **Warning:** Running the seed command will **delete** any accounts you've newly registered through the app itself. It is meant to revert the database to a known, raw starting state.
+## Demo Seed Data
+
+After `seed:run`, the database contains deterministic demo data:
+
+- 6 users
+- 7 active games
+- 6 profiles
+- 3 friendships
+- 3 pending friend requests
+- 10 messages
+- 4 achievements and 24 user-achievement rows
+- 126 game sessions
+- 42 ratings/comments
+- 4 saved games
+- 5 user stats rows
+
+This makes the client pages and admin pages demo-ready immediately after a clean seed.
+
+## Protected API Docs
+
+1. Login with an admin account.
+2. Open `/admin/api-docs`.
+3. Use the configured `VITE_ADMIN_API_KEY`, or paste the same value as backend `API_KEY`.
+
+The frontend page fetches `/api-docs` with:
+- `Authorization: Bearer <admin-jwt>`
+- `x-api-key: <api-key>`
+
+## Verified Local Checks
+
+The current `integration/merge-member-branches` branch has been verified with:
+
+- `npx knex migrate:latest`
+- `npx knex seed:run`
+- `npm run build` in `frontend/`
+- login for admin and user accounts
+- rankings in all scopes
+- review submission
+- admin user updates
+- admin game config updates
+- protected `/api-docs`
+
+## HTTPS Deployment
+
+The repo now includes deploy-ready config for the planned stack:
+
+- [render.yaml](./render.yaml) for the backend on Render
+- [frontend/vercel.json](./frontend/vercel.json) for SPA routing on Vercel
+
+### Staging flow
+1. Deploy backend from branch `integration/merge-member-branches` on Render.
+2. Deploy frontend from branch `integration/merge-member-branches` on Vercel.
+3. Set envs:
+   - Render:
+     - `DATABASE_URL`
+     - `NODE_ENV=production`
+     - `JWT_SECRET`
+     - `EMAIL_USER`
+     - `EMAIL_PASS`
+     - `API_KEY`
+     - `APP_ORIGIN=https://<vercel-staging-url>`
+     - `BACKEND_PUBLIC_URL=https://<render-staging-url>`
+   - Vercel:
+     - `VITE_API_BASE_URL=https://<render-staging-url>`
+     - `VITE_ADMIN_API_KEY=<same value as API_KEY>`
+4. From a machine with the same deploy DB connection, run:
+   ```powershell
+   npx knex migrate:latest
+   npx knex seed:run
+   ```
+5. Smoke test:
+   - login user/admin
+   - register and reset by real email
+   - open `/hub`, `/rankings`, `/games/:id`, `/profile`, `/admin/users`
+   - save/load a game
+   - submit/update a review
+   - update a user and a game config
+   - confirm `/admin/api-docs` works only with admin JWT + `x-api-key`
+
+### Production flow
+After staging passes:
+1. Merge `integration/merge-member-branches` into `main`.
+2. Point Vercel and Render production branches to `main`.
+3. Redeploy both services.
+4. Update `APP_ORIGIN` and `BACKEND_PUBLIC_URL` if production URLs differ from staging.
+5. Re-run the short smoke suite on production.
+
+## Submission Status
+
+The local project is functionally close to submission-ready. The remaining release blocker is HTTPS hosting plus provider login/configuration if the instructor requires a live deployed demo:
+
+- Local development: complete
+- Protected API docs: complete
+- Deterministic seed/demo data: complete
+- HTTPS deployment config in repo: complete
+- HTTPS deployment on actual Vercel/Render accounts: still required as a final release step if not yet hosted
