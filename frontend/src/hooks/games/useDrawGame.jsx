@@ -1,13 +1,22 @@
-import { useState } from 'react';
-import { COLORS, createGrid, fillRect } from './gameUtils';
+import { useMemo, useState } from 'react';
+import { COLORS, createGrid, fillRect, resolveBoardLayout } from './gameUtils';
 
-const CANVAS_SIZE = 16;
-const CANVAS_ORIGIN = { row: 4, col: 2 };
+const createCanvas = (canvasSize) => Array.from({ length: canvasSize }, () => Array(canvasSize).fill(null));
 
-const createCanvas = () => Array.from({ length: CANVAS_SIZE }, () => Array(CANVAS_SIZE).fill(null));
-
-export const useDrawGame = () => {
-    const [pixels, setPixels] = useState(createCanvas());
+export const useDrawGame = ({ gameMeta }) => {
+    const boardLayout = useMemo(
+        () =>
+            resolveBoardLayout({
+                requestedSize: gameMeta?.board_size,
+                fallbackSize: 16,
+                minSize: 8,
+                maxSize: 16,
+                preferredMaxCellSize: 1,
+                topPadding: 4,
+            }),
+        [gameMeta?.board_size]
+    );
+    const [pixels, setPixels] = useState(() => createCanvas(boardLayout.size));
     const [cursor, setCursor] = useState({ row: 0, col: 0 });
     const [mode, setMode] = useState('canvas');
     const [paletteCursor, setPaletteCursor] = useState(0);
@@ -31,14 +40,14 @@ export const useDrawGame = () => {
             }
         });
 
-        for (let row = 0; row < CANVAS_SIZE; row += 1) {
-            for (let col = 0; col < CANVAS_SIZE; col += 1) {
-                grid[CANVAS_ORIGIN.row + row][CANVAS_ORIGIN.col + col] = pixels[row][col] || COLORS.boardMuted;
+        for (let row = 0; row < boardLayout.size; row += 1) {
+            for (let col = 0; col < boardLayout.size; col += 1) {
+                grid[boardLayout.rowOrigin + row][boardLayout.colOrigin + col] = pixels[row][col] || COLORS.boardMuted;
             }
         }
 
         if (mode === 'canvas') {
-            grid[CANVAS_ORIGIN.row + cursor.row][CANVAS_ORIGIN.col + cursor.col] = COLORS.cursor;
+            grid[boardLayout.rowOrigin + cursor.row][boardLayout.colOrigin + cursor.col] = COLORS.cursor;
         }
 
         return grid;
@@ -52,7 +61,7 @@ export const useDrawGame = () => {
 
         setCursor((current) => ({
             ...current,
-            col: current.col === 0 ? CANVAS_SIZE - 1 : current.col - 1,
+            col: current.col === 0 ? boardLayout.size - 1 : current.col - 1,
         }));
     };
 
@@ -64,7 +73,7 @@ export const useDrawGame = () => {
 
         setCursor((current) => ({
             ...current,
-            col: current.col === CANVAS_SIZE - 1 ? 0 : current.col + 1,
+            col: current.col === boardLayout.size - 1 ? 0 : current.col + 1,
         }));
     };
 
@@ -92,7 +101,7 @@ export const useDrawGame = () => {
 
         setCursor((current) => ({
             ...current,
-            row: current.row === CANVAS_SIZE - 1 ? 0 : current.row + 1,
+            row: current.row === boardLayout.size - 1 ? 0 : current.row + 1,
         }));
     };
 
@@ -117,7 +126,7 @@ export const useDrawGame = () => {
     };
 
     const reset = () => {
-        setPixels(createCanvas());
+        setPixels(createCanvas(boardLayout.size));
         setCursor({ row: 0, col: 0 });
         setMode('canvas');
         setPaletteCursor(0);
@@ -138,7 +147,7 @@ export const useDrawGame = () => {
             return;
         }
 
-        setPixels(state.pixels || createCanvas());
+        setPixels(state.pixels || createCanvas(boardLayout.size));
         setCursor(state.cursor || { row: 0, col: 0 });
         setMode(state.mode || 'canvas');
         setPaletteCursor(state.paletteCursor || 0);
@@ -158,10 +167,15 @@ export const useDrawGame = () => {
         loadState,
         isDirty,
         requiresSideSelection: false,
+        runtimeConfig: {
+            boardSize: boardLayout.size,
+            defaultTimer: 0,
+        },
         instructions:
-            'Use the d-pad to move the cursor around the canvas. Move upward from the top row to enter palette mode, choose a color with Enter, then come back down to paint pixels.',
+            `Use the d-pad to move the cursor around the ${boardLayout.size}x${boardLayout.size} canvas. Move upward from the top row to enter palette mode, choose a color with Enter, then come back down to paint pixels.`,
         statusText: mode === 'palette' ? 'Palette mode active. Choose your paint color.' : 'Canvas mode active. Enter paints or erases the current pixel.',
         metaChips: [
+            `BOARD ${boardLayout.size}`,
             `COLOR ${currentColorIndex + 1}`,
             mode === 'palette' ? 'MODE PALETTE' : 'MODE CANVAS',
             isDirty ? 'STATE DIRTY' : 'STATE FRESH',

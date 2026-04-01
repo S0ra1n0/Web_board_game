@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
-import { COLORS, GRID_SIZE, createGrid, formatDuration, randomItem } from './gameUtils';
-
-const STARTING_SNAKE = [
-    { row: 10, col: 10 },
-    { row: 10, col: 9 },
-    { row: 10, col: 8 },
-];
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+    COLORS,
+    GRID_SIZE,
+    createGrid,
+    formatDuration,
+    randomItem,
+    resolveBoardLayout,
+    resolveTimerLimit,
+} from './gameUtils';
 
 const DIRECTIONS = {
     UP: { row: -1, col: 0 },
@@ -14,12 +16,23 @@ const DIRECTIONS = {
     RIGHT: { row: 0, col: 1 },
 };
 
-const getRandomFood = (snake) => {
+const createStartingSnake = (boardSize) => {
+    const centerRow = Math.floor(boardSize / 2);
+    const centerCol = Math.floor(boardSize / 2);
+
+    return [
+        { row: centerRow, col: centerCol },
+        { row: centerRow, col: Math.max(0, centerCol - 1) },
+        { row: centerRow, col: Math.max(0, centerCol - 2) },
+    ];
+};
+
+const getRandomFood = (snake, boardSize) => {
     const occupied = new Set(snake.map(({ row, col }) => `${row}-${col}`));
     const slots = [];
 
-    for (let row = 0; row < GRID_SIZE; row += 1) {
-        for (let col = 0; col < GRID_SIZE; col += 1) {
+    for (let row = 0; row < boardSize; row += 1) {
+        for (let col = 0; col < boardSize; col += 1) {
             if (!occupied.has(`${row}-${col}`)) {
                 slots.push({ row, col });
             }
@@ -29,9 +42,28 @@ const getRandomFood = (snake) => {
     return randomItem(slots);
 };
 
-export const useSnakeGame = ({ onGameOver }) => {
-    const [snake, setSnake] = useState(STARTING_SNAKE);
-    const [food, setFood] = useState({ row: 4, col: 4 });
+export const useSnakeGame = ({ onGameOver, gameMeta }) => {
+    const boardLayout = useMemo(
+        () =>
+            resolveBoardLayout({
+                requestedSize: gameMeta?.board_size,
+                fallbackSize: GRID_SIZE,
+                minSize: 8,
+                maxSize: GRID_SIZE,
+                preferredMaxCellSize: 1,
+            }),
+        [gameMeta?.board_size]
+    );
+    const timeLimit = useMemo(
+        () => resolveTimerLimit(gameMeta?.default_timer, 0),
+        [gameMeta?.default_timer]
+    );
+    const startingSnake = useMemo(
+        () => createStartingSnake(boardLayout.size),
+        [boardLayout.size]
+    );
+    const [snake, setSnake] = useState(startingSnake);
+    const [food, setFood] = useState(() => getRandomFood(startingSnake, boardLayout.size));
     const [direction, setDirection] = useState('RIGHT');
     const [queuedDirection, setQueuedDirection] = useState('RIGHT');
     const [isRunning, setIsRunning] = useState(true);
@@ -60,6 +92,17 @@ export const useSnakeGame = ({ onGameOver }) => {
     }, [hasEnded, isRunning]);
 
     useEffect(() => {
+        if (!timeLimit || hasEnded || elapsedSeconds < timeLimit) {
+            return;
+        }
+
+        setIsRunning(false);
+        setHasEnded(true);
+        setStatusText('Time limit reached. Round complete.');
+        onGameOverRef.current(score > 0 ? 'WIN' : 'DEFEAT', score, timeLimit);
+    }, [elapsedSeconds, hasEnded, score, timeLimit]);
+
+    useEffect(() => {
         if (!isRunning || hasEnded) {
             return undefined;
         }
@@ -74,9 +117,9 @@ export const useSnakeGame = ({ onGameOver }) => {
 
                 const hitsWall =
                     nextHead.row < 0 ||
-                    nextHead.row >= GRID_SIZE ||
+                    nextHead.row >= boardLayout.size ||
                     nextHead.col < 0 ||
-                    nextHead.col >= GRID_SIZE;
+                    nextHead.col >= boardLayout.size;
                 const hitsSelf = currentSnake.some(({ row, col }) => row === nextHead.row && col === nextHead.col);
 
                 if (hitsWall || hitsSelf) {
@@ -93,7 +136,7 @@ export const useSnakeGame = ({ onGameOver }) => {
                 if (nextHead.row === food.row && nextHead.col === food.col) {
                     const nextSnake = [nextHead, ...currentSnake];
                     setScore((current) => current + 10);
-                    setFood(getRandomFood(nextSnake));
+                    setFood(getRandomFood(nextSnake, boardLayout.size));
                     setStatusText('Food collected. Keep moving.');
                     return nextSnake;
                 }
@@ -103,7 +146,7 @@ export const useSnakeGame = ({ onGameOver }) => {
         }, 220);
 
         return () => window.clearInterval(tickId);
-    }, [elapsedSeconds, food, hasEnded, isRunning, queuedDirection, score]);
+    }, [boardLayout.size, elapsedSeconds, food, hasEnded, isRunning, queuedDirection, score]);
 
     const setNextDirection = (nextDirection) => {
         if (hasEnded) {
@@ -132,21 +175,28 @@ export const useSnakeGame = ({ onGameOver }) => {
     const renderGrid = () => {
         const grid = createGrid(COLORS.background);
 
+        for (let row = 0; row < boardLayout.size; row += 1) {
+            for (let col = 0; col < boardLayout.size; col += 1) {
+                grid[boardLayout.rowOrigin + row][boardLayout.colOrigin + col] = COLORS.boardMuted;
+            }
+        }
+
         snake.forEach(({ row, col }, index) => {
-            grid[row][col] = index === 0 ? COLORS.success : '#16a34a';
+            grid[boardLayout.rowOrigin + row][boardLayout.colOrigin + col] =
+                index === 0 ? COLORS.success : '#16a34a';
         });
 
         if (food) {
-            grid[food.row][food.col] = COLORS.danger;
+            grid[boardLayout.rowOrigin + food.row][boardLayout.colOrigin + food.col] = COLORS.danger;
         }
 
         return grid;
     };
 
     const reset = () => {
-        const nextSnake = [...STARTING_SNAKE];
+        const nextSnake = createStartingSnake(boardLayout.size);
         setSnake(nextSnake);
-        setFood(getRandomFood(nextSnake));
+        setFood(getRandomFood(nextSnake, boardLayout.size));
         setDirection('RIGHT');
         setQueuedDirection('RIGHT');
         setIsRunning(true);
@@ -173,8 +223,9 @@ export const useSnakeGame = ({ onGameOver }) => {
             return;
         }
 
-        setSnake(state.snake || STARTING_SNAKE);
-        setFood(state.food || getRandomFood(state.snake || STARTING_SNAKE));
+        const restoredSnake = state.snake || createStartingSnake(boardLayout.size);
+        setSnake(restoredSnake);
+        setFood(state.food || getRandomFood(restoredSnake, boardLayout.size));
         setDirection(state.direction || 'RIGHT');
         setQueuedDirection(state.queuedDirection || state.direction || 'RIGHT');
         setElapsedSeconds(state.elapsedSeconds || 0);
@@ -198,12 +249,19 @@ export const useSnakeGame = ({ onGameOver }) => {
         loadState,
         isDirty,
         requiresSideSelection: false,
+        runtimeConfig: {
+            boardSize: boardLayout.size,
+            defaultTimer: timeLimit,
+        },
         instructions:
-            'Snake starts immediately. Use the d-pad to steer, avoid walls and your own body, and press Enter to pause or resume.',
+            `Snake starts immediately on a ${boardLayout.size}x${boardLayout.size} arena. Use the d-pad to steer, avoid walls and your own body, and press Enter to pause or resume.`,
         statusText,
         metaChips: [
+            `BOARD ${boardLayout.size}`,
             `SCORE ${score}`,
-            `TIME ${formatDuration(elapsedSeconds)}`,
+            timeLimit
+                ? `LEFT ${formatDuration(Math.max(0, timeLimit - elapsedSeconds))}`
+                : `TIME ${formatDuration(elapsedSeconds)}`,
             isRunning ? 'STATE LIVE' : hasEnded ? 'STATE OVER' : 'STATE PAUSED',
         ],
     };

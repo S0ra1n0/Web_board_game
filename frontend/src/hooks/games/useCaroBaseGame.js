@@ -1,13 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
-import { COLORS, createGrid, formatDuration } from './gameUtils';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { COLORS, createGrid, formatDuration, resolveBoardLayout } from './gameUtils';
 
-const BOARD_SIZE = 10;
-const CELL_SIZE = 2;
-
-const createBoard = () => Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null));
+const createBoard = (boardSize) => Array.from({ length: boardSize }, () => Array(boardSize).fill(null));
 
 const hasLine = (board, row, col, targetLength) => {
     const symbol = board[row][col];
+    const boardSize = board.length;
 
     if (!symbol) {
         return false;
@@ -29,9 +27,9 @@ const hasLine = (board, row, col, targetLength) => {
 
             while (
                 nextRow >= 0 &&
-                nextRow < BOARD_SIZE &&
+                nextRow < boardSize &&
                 nextCol >= 0 &&
-                nextCol < BOARD_SIZE &&
+                nextCol < boardSize &&
                 board[nextRow][nextCol] === symbol
             ) {
                 total += 1;
@@ -44,9 +42,27 @@ const hasLine = (board, row, col, targetLength) => {
     });
 };
 
-export const useCaroBaseGame = ({ onGameOver, targetLength, title }) => {
-    const [board, setBoard] = useState(createBoard());
-    const [cursor, setCursor] = useState({ row: 4, col: 4 });
+export const useCaroBaseGame = ({ onGameOver, targetLength, title, gameMeta }) => {
+    const boardLayout = useMemo(
+        () =>
+            resolveBoardLayout({
+                requestedSize: gameMeta?.board_size,
+                fallbackSize: 10,
+                minSize: Math.max(5, targetLength),
+                maxSize: 20,
+                preferredMaxCellSize: 2,
+            }),
+        [gameMeta?.board_size, targetLength]
+    );
+    const defaultCursor = useMemo(
+        () => ({
+            row: Math.floor(boardLayout.size / 2),
+            col: Math.floor(boardLayout.size / 2),
+        }),
+        [boardLayout.size]
+    );
+    const [board, setBoard] = useState(() => createBoard(boardLayout.size));
+    const [cursor, setCursor] = useState(defaultCursor);
     const [playerSide, setPlayerSide] = useState('X');
     const [isPlayerTurn, setIsPlayerTurn] = useState(true);
     const [winner, setWinner] = useState(null);
@@ -137,8 +153,8 @@ export const useCaroBaseGame = ({ onGameOver, targetLength, title }) => {
         }
 
         setCursor((current) => ({
-            row: (current.row + rowStep + BOARD_SIZE) % BOARD_SIZE,
-            col: (current.col + colStep + BOARD_SIZE) % BOARD_SIZE,
+            row: (current.row + rowStep + boardLayout.size) % boardLayout.size,
+            col: (current.col + colStep + boardLayout.size) % boardLayout.size,
         }));
     };
 
@@ -166,24 +182,26 @@ export const useCaroBaseGame = ({ onGameOver, targetLength, title }) => {
     const renderGrid = () => {
         const grid = createGrid(COLORS.background);
 
-        for (let row = 0; row < BOARD_SIZE; row += 1) {
-            for (let col = 0; col < BOARD_SIZE; col += 1) {
-                const top = row * CELL_SIZE;
-                const left = col * CELL_SIZE;
+        for (let row = 0; row < boardLayout.size; row += 1) {
+            for (let col = 0; col < boardLayout.size; col += 1) {
+                const top = boardLayout.rowOrigin + row * boardLayout.cellSize;
+                const left = boardLayout.colOrigin + col * boardLayout.cellSize;
                 const value = board[row][col];
                 const baseColor = value === 'X' ? COLORS.player : value === 'O' ? COLORS.ai : COLORS.boardMuted;
 
-                for (let innerRow = 0; innerRow < CELL_SIZE; innerRow += 1) {
-                    for (let innerCol = 0; innerCol < CELL_SIZE; innerCol += 1) {
+                for (let innerRow = 0; innerRow < boardLayout.cellSize; innerRow += 1) {
+                    for (let innerCol = 0; innerCol < boardLayout.cellSize; innerCol += 1) {
                         grid[top + innerRow][left + innerCol] = baseColor;
                     }
                 }
 
                 if (cursor.row === row && cursor.col === col && isPlayerTurn && !winner && value === null) {
                     grid[top][left] = COLORS.cursor;
-                    grid[top][left + 1] = COLORS.cursor;
-                    grid[top + 1][left] = COLORS.cursor;
-                    grid[top + 1][left + 1] = COLORS.cursor;
+                    if (boardLayout.cellSize > 1) {
+                        grid[top][left + 1] = COLORS.cursor;
+                        grid[top + 1][left] = COLORS.cursor;
+                        grid[top + 1][left + 1] = COLORS.cursor;
+                    }
                 }
             }
         }
@@ -192,8 +210,9 @@ export const useCaroBaseGame = ({ onGameOver, targetLength, title }) => {
     };
 
     const reset = (preferredSide = 'X') => {
-        setBoard(createBoard());
-        setCursor({ row: 4, col: 4 });
+        const freshBoard = createBoard(boardLayout.size);
+        setBoard(freshBoard);
+        setCursor(defaultCursor);
         setPlayerSide(preferredSide);
         setWinner(null);
         setIsDirty(false);
@@ -206,7 +225,7 @@ export const useCaroBaseGame = ({ onGameOver, targetLength, title }) => {
         }
 
         setIsPlayerTurn(false);
-        triggerAiMove(createBoard(), 'X');
+        triggerAiMove(freshBoard, 'X');
     };
 
     const getState = () => ({
@@ -222,8 +241,8 @@ export const useCaroBaseGame = ({ onGameOver, targetLength, title }) => {
             return;
         }
 
-        setBoard(state.board || createBoard());
-        setCursor(state.cursor || { row: 4, col: 4 });
+        setBoard(state.board || createBoard(boardLayout.size));
+        setCursor(state.cursor || defaultCursor);
         setPlayerSide(state.playerSide || 'X');
         setIsPlayerTurn(state.isPlayerTurn !== false);
         setElapsedSeconds(state.elapsedSeconds || 0);
@@ -244,7 +263,11 @@ export const useCaroBaseGame = ({ onGameOver, targetLength, title }) => {
         loadState,
         isDirty,
         requiresSideSelection: true,
-        instructions: `${title} uses the full d-pad. Move the cursor, press Enter to place a stone, and connect ${targetLength} in a row before the computer does.`,
+        runtimeConfig: {
+            boardSize: boardLayout.size,
+            defaultTimer: 0,
+        },
+        instructions: `${title} uses the full d-pad. Move the cursor, press Enter to place a stone, and connect ${targetLength} in a row before the computer does on a ${boardLayout.size}x${boardLayout.size} board.`,
         statusText: winner
             ? winner === 'DRAW'
                 ? 'The board is full and the round is tied.'
@@ -255,6 +278,7 @@ export const useCaroBaseGame = ({ onGameOver, targetLength, title }) => {
                 ? 'Pick an open tile to place your next stone.'
                 : 'Computer is selecting a reply move.',
         metaChips: [
+            `BOARD ${boardLayout.size}`,
             `GOAL ${targetLength}`,
             `TIME ${formatDuration(elapsedSeconds)}`,
             winner ? `RESULT ${winner}` : isPlayerTurn ? 'TURN YOU' : 'TURN CPU',

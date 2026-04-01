@@ -1,18 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
-import { COLORS, createGrid, fillRect, formatDuration } from './gameUtils';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+    COLORS,
+    createGrid,
+    fillRect,
+    formatDuration,
+    getTileSpan,
+    resolveBoardLayout,
+    resolveTimerLimit,
+} from './gameUtils';
 
-const BOARD_SIZE = 6;
-const CELL_SIZE = 3;
-const BOARD_ORIGIN = 1;
 const TOTAL_TIME = 90;
 
 const createRandomTile = () => Math.floor(Math.random() * COLORS.match3.length);
 
-const createBoard = () => {
-    const board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0));
+const createBoard = (boardSize) => {
+    const board = Array.from({ length: boardSize }, () => Array(boardSize).fill(0));
 
-    for (let row = 0; row < BOARD_SIZE; row += 1) {
-        for (let col = 0; col < BOARD_SIZE; col += 1) {
+    for (let row = 0; row < boardSize; row += 1) {
+        for (let col = 0; col < boardSize; col += 1) {
             let nextValue = createRandomTile();
 
             while (
@@ -30,13 +35,14 @@ const createBoard = () => {
 };
 
 const collectMatches = (board) => {
+    const boardSize = board.length;
     const matches = new Set();
 
-    for (let row = 0; row < BOARD_SIZE; row += 1) {
+    for (let row = 0; row < boardSize; row += 1) {
         let runLength = 1;
 
-        for (let col = 1; col <= BOARD_SIZE; col += 1) {
-            if (col < BOARD_SIZE && board[row][col] === board[row][col - 1]) {
+        for (let col = 1; col <= boardSize; col += 1) {
+            if (col < boardSize && board[row][col] === board[row][col - 1]) {
                 runLength += 1;
                 continue;
             }
@@ -51,11 +57,11 @@ const collectMatches = (board) => {
         }
     }
 
-    for (let col = 0; col < BOARD_SIZE; col += 1) {
+    for (let col = 0; col < boardSize; col += 1) {
         let runLength = 1;
 
-        for (let row = 1; row <= BOARD_SIZE; row += 1) {
-            if (row < BOARD_SIZE && board[row][col] === board[row - 1][col]) {
+        for (let row = 1; row <= boardSize; row += 1) {
+            if (row < boardSize && board[row][col] === board[row - 1][col]) {
                 runLength += 1;
                 continue;
             }
@@ -74,23 +80,24 @@ const collectMatches = (board) => {
 };
 
 const applyGravity = (board) => {
+    const boardSize = board.length;
     const nextBoard = board.map((row) => [...row]);
 
-    for (let col = 0; col < BOARD_SIZE; col += 1) {
+    for (let col = 0; col < boardSize; col += 1) {
         const nextColumn = [];
 
-        for (let row = BOARD_SIZE - 1; row >= 0; row -= 1) {
+        for (let row = boardSize - 1; row >= 0; row -= 1) {
             if (nextBoard[row][col] !== null) {
                 nextColumn.push(nextBoard[row][col]);
             }
         }
 
-        while (nextColumn.length < BOARD_SIZE) {
+        while (nextColumn.length < boardSize) {
             nextColumn.push(createRandomTile());
         }
 
-        for (let row = BOARD_SIZE - 1; row >= 0; row -= 1) {
-            nextBoard[row][col] = nextColumn[BOARD_SIZE - 1 - row];
+        for (let row = boardSize - 1; row >= 0; row -= 1) {
+            nextBoard[row][col] = nextColumn[boardSize - 1 - row];
         }
     }
 
@@ -121,12 +128,31 @@ const resolveBoard = (board) => {
 const areAdjacent = (first, second) =>
     Math.abs(first.row - second.row) + Math.abs(first.col - second.col) === 1;
 
-export const useMatch3Game = ({ onGameOver }) => {
-    const [board, setBoard] = useState(createBoard());
+export const useMatch3Game = ({ onGameOver, gameMeta }) => {
+    const boardLayout = useMemo(
+        () =>
+            resolveBoardLayout({
+                requestedSize: gameMeta?.board_size,
+                fallbackSize: 6,
+                minSize: 4,
+                maxSize: 8,
+                preferredMaxCellSize: 3,
+                topPadding: 1,
+                bottomPadding: 1,
+                leftPadding: 1,
+                rightPadding: 1,
+            }),
+        [gameMeta?.board_size]
+    );
+    const timeLimit = useMemo(
+        () => resolveTimerLimit(gameMeta?.default_timer, TOTAL_TIME),
+        [gameMeta?.default_timer]
+    );
+    const [board, setBoard] = useState(() => createBoard(boardLayout.size));
     const [cursor, setCursor] = useState({ row: 0, col: 0 });
     const [selectedCell, setSelectedCell] = useState(null);
     const [score, setScore] = useState(0);
-    const [secondsLeft, setSecondsLeft] = useState(TOTAL_TIME);
+    const [secondsLeft, setSecondsLeft] = useState(timeLimit);
     const [isDirty, setIsDirty] = useState(false);
     const [statusText, setStatusText] = useState('Create swaps that form groups of three or more.');
     const [hasEnded, setHasEnded] = useState(false);
@@ -142,11 +168,15 @@ export const useMatch3Game = ({ onGameOver }) => {
         }
 
         const timerId = window.setInterval(() => {
+            if (!timeLimit) {
+                return;
+            }
+
             setSecondsLeft((current) => {
                 if (current <= 1) {
                     window.clearInterval(timerId);
                     setHasEnded(true);
-                    onGameOverRef.current(score > 0 ? 'WIN' : 'DEFEAT', score, TOTAL_TIME);
+                    onGameOverRef.current(score > 0 ? 'WIN' : 'DEFEAT', score, timeLimit);
                     return 0;
                 }
 
@@ -155,7 +185,7 @@ export const useMatch3Game = ({ onGameOver }) => {
         }, 1000);
 
         return () => window.clearInterval(timerId);
-    }, [hasEnded, score]);
+    }, [hasEnded, score, timeLimit]);
 
     const moveCursor = (rowStep, colStep) => {
         if (hasEnded) {
@@ -163,8 +193,8 @@ export const useMatch3Game = ({ onGameOver }) => {
         }
 
         setCursor((current) => ({
-            row: (current.row + rowStep + BOARD_SIZE) % BOARD_SIZE,
-            col: (current.col + colStep + BOARD_SIZE) % BOARD_SIZE,
+            row: (current.row + rowStep + boardLayout.size) % boardLayout.size,
+            col: (current.col + colStep + boardLayout.size) % boardLayout.size,
         }));
     };
 
@@ -215,19 +245,20 @@ export const useMatch3Game = ({ onGameOver }) => {
 
     const renderGrid = () => {
         const grid = createGrid(COLORS.background);
+        const tileSpan = getTileSpan(boardLayout.cellSize);
 
-        for (let row = 0; row < BOARD_SIZE; row += 1) {
-            for (let col = 0; col < BOARD_SIZE; col += 1) {
-                const top = BOARD_ORIGIN + row * CELL_SIZE;
-                const left = BOARD_ORIGIN + col * CELL_SIZE;
-                fillRect(grid, top, left, CELL_SIZE - 1, CELL_SIZE - 1, COLORS.match3[board[row][col]]);
+        for (let row = 0; row < boardLayout.size; row += 1) {
+            for (let col = 0; col < boardLayout.size; col += 1) {
+                const top = boardLayout.rowOrigin + row * boardLayout.cellSize;
+                const left = boardLayout.colOrigin + col * boardLayout.cellSize;
+                fillRect(grid, top, left, tileSpan, tileSpan, COLORS.match3[board[row][col]]);
 
                 if (selectedCell && selectedCell.row === row && selectedCell.col === col) {
-                    fillRect(grid, top, left, CELL_SIZE - 1, 1, COLORS.neutral);
-                    fillRect(grid, top, left, 1, CELL_SIZE - 1, COLORS.neutral);
+                    fillRect(grid, top, left, tileSpan, 1, COLORS.neutral);
+                    fillRect(grid, top, left, 1, tileSpan, COLORS.neutral);
                 } else if (cursor.row === row && cursor.col === col) {
-                    fillRect(grid, top, left, CELL_SIZE - 1, 1, COLORS.cursor);
-                    fillRect(grid, top, left, 1, CELL_SIZE - 1, COLORS.cursor);
+                    fillRect(grid, top, left, tileSpan, 1, COLORS.cursor);
+                    fillRect(grid, top, left, 1, tileSpan, COLORS.cursor);
                 }
             }
         }
@@ -236,11 +267,11 @@ export const useMatch3Game = ({ onGameOver }) => {
     };
 
     const reset = () => {
-        setBoard(createBoard());
+        setBoard(createBoard(boardLayout.size));
         setCursor({ row: 0, col: 0 });
         setSelectedCell(null);
         setScore(0);
-        setSecondsLeft(TOTAL_TIME);
+        setSecondsLeft(timeLimit);
         setIsDirty(false);
         setHasEnded(false);
         setStatusText('Create swaps that form groups of three or more.');
@@ -259,11 +290,11 @@ export const useMatch3Game = ({ onGameOver }) => {
             return;
         }
 
-        setBoard(state.board || createBoard());
+        setBoard(state.board || createBoard(boardLayout.size));
         setCursor(state.cursor || { row: 0, col: 0 });
         setSelectedCell(state.selectedCell || null);
         setScore(state.score || 0);
-        setSecondsLeft(state.secondsLeft || TOTAL_TIME);
+        setSecondsLeft(state.secondsLeft ?? timeLimit);
         setIsDirty(true);
         setHasEnded(false);
         setStatusText('Saved puzzle state restored.');
@@ -281,12 +312,17 @@ export const useMatch3Game = ({ onGameOver }) => {
         loadState,
         isDirty,
         requiresSideSelection: false,
+        runtimeConfig: {
+            boardSize: boardLayout.size,
+            defaultTimer: timeLimit,
+        },
         instructions:
-            'Use the d-pad to position the cursor. Press Enter once to select a tile and again on an adjacent tile to swap. Make lines of three or more before time runs out.',
+            `Use the d-pad to position the cursor. Press Enter once to select a tile and again on an adjacent tile to swap. Make lines of three or more on a ${boardLayout.size}x${boardLayout.size} board before time runs out.`,
         statusText,
         metaChips: [
+            `BOARD ${boardLayout.size}`,
             `SCORE ${score}`,
-            `LEFT ${formatDuration(secondsLeft)}`,
+            timeLimit ? `LEFT ${formatDuration(secondsLeft)}` : 'LIMIT OFF',
             selectedCell ? 'STATE SWAP' : 'STATE MOVE',
         ],
     };

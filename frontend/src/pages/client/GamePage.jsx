@@ -157,13 +157,16 @@ const GameRuntimeShell = ({ gameMeta, gameId, useGameHook }) => {
     const handleHint = () => {
         if (gameOverModal || exitConfirmModal || sideSelectionModal || hintModal) return;
 
+        const resolvedBoardSize = gameInstance.runtimeConfig?.boardSize ?? gameMeta?.board_size;
+        const resolvedTimer = gameInstance.runtimeConfig?.defaultTimer ?? gameMeta?.default_timer ?? 0;
+
         setHintModal({
             title: `${gameMeta?.name || 'Game'} Guide`,
             description:
                 `${gameInstance.instructions}\n\n` +
                 `Score Type: ${gameMeta?.score_type}\n` +
-                `Board Size: ${gameMeta?.board_size}\n` +
-                `Default Timer: ${gameMeta?.default_timer || 0}s`,
+                `Board Size: ${resolvedBoardSize}\n` +
+                `Default Timer: ${resolvedTimer ? `${resolvedTimer}s` : 'No limit'}`,
             onClose: () => setHintModal(null),
         });
     };

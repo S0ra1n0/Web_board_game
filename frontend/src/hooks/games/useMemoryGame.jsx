@@ -1,24 +1,48 @@
-import { useEffect, useRef, useState } from 'react';
-import { COLORS, createGrid, fillRect, formatDuration, shuffle } from './gameUtils';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+    COLORS,
+    createGrid,
+    fillRect,
+    formatDuration,
+    getTileSpan,
+    resolveBoardLayout,
+    resolveTimerLimit,
+    shuffle,
+} from './gameUtils';
 
-const BOARD_SIZE = 4;
-const CELL_SIZE = 4;
-const BOARD_ORIGIN = 2;
-
-const createDeck = () => {
-    const baseValues = shuffle([...Array(8).keys(), ...Array(8).keys()]);
-    return Array.from({ length: BOARD_SIZE }, (_, row) =>
-        Array.from({ length: BOARD_SIZE }, (_, col) => baseValues[row * BOARD_SIZE + col])
+const createDeck = (boardSize) => {
+    const totalPairs = (boardSize * boardSize) / 2;
+    const baseValues = shuffle(
+        Array.from({ length: totalPairs }, (_, index) => index).flatMap((index) => [index, index])
+    );
+    return Array.from({ length: boardSize }, (_, row) =>
+        Array.from({ length: boardSize }, (_, col) => baseValues[row * boardSize + col])
     );
 };
 
-export const useMemoryGame = ({ onGameOver }) => {
-    const [deck, setDeck] = useState(createDeck());
+export const useMemoryGame = ({ onGameOver, gameMeta }) => {
+    const boardLayout = useMemo(
+        () =>
+            resolveBoardLayout({
+                requestedSize: gameMeta?.board_size,
+                fallbackSize: 4,
+                minSize: 4,
+                maxSize: 8,
+                preferredMaxCellSize: 4,
+                requireEven: true,
+            }),
+        [gameMeta?.board_size]
+    );
+    const timeLimit = useMemo(
+        () => resolveTimerLimit(gameMeta?.default_timer, 180),
+        [gameMeta?.default_timer]
+    );
+    const [deck, setDeck] = useState(() => createDeck(boardLayout.size));
     const [revealed, setRevealed] = useState([]);
     const [matched, setMatched] = useState([]);
     const [cursor, setCursor] = useState({ row: 0, col: 0 });
     const [moves, setMoves] = useState(0);
-    const [elapsedSeconds, setElapsedSeconds] = useState(0);
+    const [secondsLeft, setSecondsLeft] = useState(timeLimit);
     const [isDirty, setIsDirty] = useState(false);
     const [statusText, setStatusText] = useState('Reveal two cards and remember their colors.');
     const [isResolving, setIsResolving] = useState(false);
@@ -36,25 +60,39 @@ export const useMemoryGame = ({ onGameOver }) => {
         }
 
         const timerId = window.setInterval(() => {
-            setElapsedSeconds(Math.floor((Date.now() - startedAtRef.current) / 1000));
+            if (!timeLimit) {
+                return;
+            }
+
+            setSecondsLeft((current) => {
+                if (current <= 1) {
+                    window.clearInterval(timerId);
+                    setHasEnded(true);
+                    onGameOverRef.current('DEFEAT', 0, timeLimit);
+                    return 0;
+                }
+
+                return current - 1;
+            });
         }, 1000);
 
         return () => window.clearInterval(timerId);
-    }, [hasEnded]);
+    }, [hasEnded, timeLimit]);
 
     useEffect(() => {
-        if (hasEnded || matched.length !== BOARD_SIZE * BOARD_SIZE || !matched.length) {
+        if (hasEnded || matched.length !== boardLayout.size * boardLayout.size || !matched.length) {
             return undefined;
         }
 
         const timeoutId = window.setTimeout(() => {
             setHasEnded(true);
+            const elapsedSeconds = timeLimit ? Math.max(0, timeLimit - secondsLeft) : 0;
             const score = Math.max(1000 - moves * 25 - elapsedSeconds * 5, 100);
             onGameOverRef.current('WIN', score, elapsedSeconds);
         }, 350);
 
         return () => window.clearTimeout(timeoutId);
-    }, [elapsedSeconds, hasEnded, matched.length, moves]);
+    }, [boardLayout.size, hasEnded, matched.length, moves, secondsLeft, timeLimit]);
 
     const moveCursor = (rowStep, colStep) => {
         if (isResolving) {
@@ -62,8 +100,8 @@ export const useMemoryGame = ({ onGameOver }) => {
         }
 
         setCursor((current) => ({
-            row: (current.row + rowStep + BOARD_SIZE) % BOARD_SIZE,
-            col: (current.col + colStep + BOARD_SIZE) % BOARD_SIZE,
+            row: (current.row + rowStep + boardLayout.size) % boardLayout.size,
+            col: (current.col + colStep + boardLayout.size) % boardLayout.size,
         }));
     };
 
@@ -110,19 +148,27 @@ export const useMemoryGame = ({ onGameOver }) => {
 
     const renderGrid = () => {
         const grid = createGrid(COLORS.background);
+        const tileSpan = getTileSpan(boardLayout.cellSize);
 
-        for (let row = 0; row < BOARD_SIZE; row += 1) {
-            for (let col = 0; col < BOARD_SIZE; col += 1) {
-                const top = BOARD_ORIGIN + row * CELL_SIZE;
-                const left = BOARD_ORIGIN + col * CELL_SIZE;
+        for (let row = 0; row < boardLayout.size; row += 1) {
+            for (let col = 0; col < boardLayout.size; col += 1) {
+                const top = boardLayout.rowOrigin + row * boardLayout.cellSize;
+                const left = boardLayout.colOrigin + col * boardLayout.cellSize;
                 const key = `${row}-${col}`;
                 const value = deck[row][col];
                 const isVisible = revealed.includes(key) || matched.includes(key);
-                fillRect(grid, top, left, CELL_SIZE - 1, CELL_SIZE - 1, isVisible ? COLORS.memory[value] : COLORS.boardMuted);
+                fillRect(
+                    grid,
+                    top,
+                    left,
+                    tileSpan,
+                    tileSpan,
+                    isVisible ? COLORS.memory[value % COLORS.memory.length] : COLORS.boardMuted
+                );
 
                 if (cursor.row === row && cursor.col === col) {
-                    fillRect(grid, top, left, CELL_SIZE - 1, 1, COLORS.cursor);
-                    fillRect(grid, top, left, 1, CELL_SIZE - 1, COLORS.cursor);
+                    fillRect(grid, top, left, tileSpan, 1, COLORS.cursor);
+                    fillRect(grid, top, left, 1, tileSpan, COLORS.cursor);
                 }
             }
         }
@@ -131,12 +177,12 @@ export const useMemoryGame = ({ onGameOver }) => {
     };
 
     const reset = () => {
-        setDeck(createDeck());
+        setDeck(createDeck(boardLayout.size));
         setRevealed([]);
         setMatched([]);
         setCursor({ row: 0, col: 0 });
         setMoves(0);
-        setElapsedSeconds(0);
+        setSecondsLeft(timeLimit);
         setIsDirty(false);
         setStatusText('Reveal two cards and remember their colors.');
         setIsResolving(false);
@@ -158,17 +204,20 @@ export const useMemoryGame = ({ onGameOver }) => {
             return;
         }
 
-        setDeck(state.deck || createDeck());
+        setDeck(state.deck || createDeck(boardLayout.size));
         setRevealed(state.revealed || []);
         setMatched(state.matched || []);
         setCursor(state.cursor || { row: 0, col: 0 });
         setMoves(state.moves || 0);
-        setElapsedSeconds(state.elapsedSeconds || 0);
+        setSecondsLeft(
+            state.secondsLeft ??
+                (timeLimit ? Math.max(0, timeLimit - (state.elapsedSeconds || 0)) : 0)
+        );
         setIsDirty(true);
         setStatusText('Saved memory board restored.');
         setIsResolving(false);
         setHasEnded(false);
-        startedAtRef.current = Date.now() - ((state.elapsedSeconds || 0) * 1000);
+        startedAtRef.current = Date.now();
     };
 
     return {
@@ -183,13 +232,18 @@ export const useMemoryGame = ({ onGameOver }) => {
         loadState,
         isDirty,
         requiresSideSelection: false,
+        runtimeConfig: {
+            boardSize: boardLayout.size,
+            defaultTimer: timeLimit,
+        },
         instructions:
-            'Move around the deck with the d-pad and press Enter to flip a card. Find all matching color pairs to finish the board.',
+            `Move around the deck with the d-pad and press Enter to flip a card. Find all matching color pairs on a ${boardLayout.size}x${boardLayout.size} board before time expires.`,
         statusText,
         metaChips: [
-            `PAIRS ${matched.length / 2}/8`,
+            `BOARD ${boardLayout.size}`,
+            `PAIRS ${matched.length / 2}/${(boardLayout.size * boardLayout.size) / 2}`,
             `MOVES ${moves}`,
-            `TIME ${formatDuration(elapsedSeconds)}`,
+            timeLimit ? `LEFT ${formatDuration(secondsLeft)}` : 'LIMIT OFF',
         ],
     };
 };

@@ -50,3 +50,80 @@ export const formatDuration = (seconds = 0) => {
     const remainder = seconds % 60;
     return `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
 };
+
+export const clampInteger = (value, { min = 0, max = GRID_SIZE, fallback = min } = {}) => {
+    const parsed = Number.parseInt(value, 10);
+
+    if (Number.isNaN(parsed)) {
+        return fallback;
+    }
+
+    return Math.min(max, Math.max(min, parsed));
+};
+
+const clampEven = (value, min, max) => {
+    let next = value;
+
+    if (next % 2 !== 0) {
+        next = next < max ? next + 1 : next - 1;
+    }
+
+    return Math.min(max, Math.max(min, next));
+};
+
+export const resolveBoardLayout = ({
+    requestedSize,
+    fallbackSize,
+    minSize = 1,
+    maxSize = GRID_SIZE,
+    preferredMaxCellSize = 1,
+    topPadding = 0,
+    bottomPadding = 0,
+    leftPadding = 0,
+    rightPadding = 0,
+    requireEven = false,
+} = {}) => {
+    const availableRows = Math.max(1, GRID_SIZE - topPadding - bottomPadding);
+    const availableCols = Math.max(1, GRID_SIZE - leftPadding - rightPadding);
+    const hardMaxSize = Math.max(1, Math.min(maxSize, availableRows, availableCols));
+
+    let resolvedSize = clampInteger(requestedSize, {
+        min: minSize,
+        max: hardMaxSize,
+        fallback: clampInteger(fallbackSize, {
+            min: minSize,
+            max: hardMaxSize,
+            fallback: minSize,
+        }),
+    });
+
+    if (requireEven) {
+        const evenMin = minSize % 2 === 0 ? minSize : minSize + 1;
+        const evenMax = hardMaxSize % 2 === 0 ? hardMaxSize : hardMaxSize - 1;
+        resolvedSize = clampEven(resolvedSize, evenMin, Math.max(evenMin, evenMax));
+    }
+
+    const cellSize = Math.max(
+        1,
+        Math.min(
+            preferredMaxCellSize,
+            Math.floor(Math.min(availableRows, availableCols) / resolvedSize)
+        )
+    );
+
+    return {
+        size: resolvedSize,
+        cellSize,
+        rowOrigin:
+            topPadding +
+            Math.max(0, Math.floor((availableRows - resolvedSize * cellSize) / 2)),
+        colOrigin:
+            leftPadding +
+            Math.max(0, Math.floor((availableCols - resolvedSize * cellSize) / 2)),
+    };
+};
+
+export const resolveTimerLimit = (value, fallback = 0) =>
+    clampInteger(value, { min: 0, max: 3600, fallback });
+
+export const getTileSpan = (cellSize) => Math.max(1, cellSize - 1);
