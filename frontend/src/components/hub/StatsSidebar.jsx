@@ -105,7 +105,7 @@ const StatsSidebar = ({ activeGame, userStats = {}, lastSaveTime, onLoad }) => {
                     {activeGame?.id === 'MEMORY' ? (
                         <p style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Timer: 1 mins</p>
                     ) : activeGame?.id !== 'DRAW' ? (
-                        <p style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Versus: AI (Random)</p>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Versus: AI (Difficulty Selectable)</p>
                     ) : (
                         <p style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Mode: FreePlay</p>
                     )}
@@ -132,4 +132,3 @@ const StatsSidebar = ({ activeGame, userStats = {}, lastSaveTime, onLoad }) => {
 };
 
 export default StatsSidebar;
-

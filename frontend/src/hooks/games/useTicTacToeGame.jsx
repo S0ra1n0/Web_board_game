@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { COLORS, createGrid, formatDuration } from './gameUtils';
+import { getTicTacToeAiMove } from './ai/ticTacToeAi';
 
 const BOARD_START = 3;
 const CELL_SIZE = 4;
@@ -39,6 +40,7 @@ export const useTicTacToeGame = ({ onGameOver }) => {
     const [board, setBoard] = useState(Array(9).fill(null));
     const [cursorIndex, setCursorIndex] = useState(0);
     const [playerSide, setPlayerSide] = useState('X');
+    const [difficulty, setDifficulty] = useState('medium');
     const [isPlayerTurn, setIsPlayerTurn] = useState(true);
     const [winner, setWinner] = useState(null);
     const [isDirty, setIsDirty] = useState(false);
@@ -101,17 +103,25 @@ export const useTicTacToeGame = ({ onGameOver }) => {
         return () => window.clearTimeout(timeoutId);
     }, [winner, playerSide]);
 
-    const triggerAiMove = (currentBoard, aiSide) => {
+    const triggerAiMove = (currentBoard, aiSide, selectedDifficulty = difficulty) => {
         window.setTimeout(() => {
-            const availableMoves = currentBoard
-                .map((cell, index) => (cell === null ? index : null))
-                .filter((index) => index !== null);
+            const currentPlayerSide = aiSide === 'X' ? 'O' : 'X';
 
-            if (!availableMoves.length || checkWinner(currentBoard)) {
+            if (checkWinner(currentBoard)) {
                 return;
             }
 
-            const nextIndex = availableMoves[Math.floor(Math.random() * availableMoves.length)];
+            const nextIndex = getTicTacToeAiMove({
+                board: currentBoard,
+                aiSide,
+                playerSide: currentPlayerSide,
+                difficulty: selectedDifficulty,
+            });
+
+            if (nextIndex === null || nextIndex === undefined) {
+                return;
+            }
+
             const nextBoard = [...currentBoard];
             nextBoard[nextIndex] = aiSide;
             setBoard(nextBoard);
@@ -232,10 +242,16 @@ export const useTicTacToeGame = ({ onGameOver }) => {
         return grid;
     };
 
-    const reset = (preferredSide = 'X') => {
+    const reset = (options = {}) => {
+        const preferredSide =
+            typeof options === 'string' ? options : options.side || 'X';
+        const selectedDifficulty =
+            typeof options === 'string' ? difficulty : options.difficulty || 'medium';
+
         setBoard(Array(9).fill(null));
         setCursorIndex(0);
         setPlayerSide(preferredSide);
+        setDifficulty(selectedDifficulty);
         setWinner(null);
         setIsDirty(false);
         setElapsedSeconds(0);
@@ -247,13 +263,14 @@ export const useTicTacToeGame = ({ onGameOver }) => {
         }
 
         setIsPlayerTurn(false);
-        triggerAiMove(Array(9).fill(null), 'X');
+        triggerAiMove(Array(9).fill(null), 'X', selectedDifficulty);
     };
 
     const getState = () => ({
         board,
         cursorIndex,
         playerSide,
+        difficulty,
         isPlayerTurn,
         elapsedSeconds,
     });
@@ -266,6 +283,7 @@ export const useTicTacToeGame = ({ onGameOver }) => {
         setBoard(state.board || Array(9).fill(null));
         setCursorIndex(state.cursorIndex || 0);
         setPlayerSide(state.playerSide || 'X');
+        setDifficulty(state.difficulty || 'medium');
         setIsPlayerTurn(state.isPlayerTurn !== false);
         setElapsedSeconds(state.elapsedSeconds || 0);
         setWinner(null);
@@ -284,7 +302,10 @@ export const useTicTacToeGame = ({ onGameOver }) => {
         getState,
         loadState,
         isDirty,
+        currentDifficulty: difficulty,
         requiresSideSelection: true,
+        supportsDifficultySelection: true,
+        defaultDifficulty: 'medium',
         guideSummary:
             'A quick head-to-head grid duel where every move matters. You and the computer take turns placing marks, racing to create the first line of three.',
         guideSections: [
@@ -319,9 +340,10 @@ export const useTicTacToeGame = ({ onGameOver }) => {
                     : 'The computer closed the board first.'
             : isPlayerTurn
                 ? 'Your turn to place a mark.'
-                : 'Computer is thinking...',
+                : `Computer is thinking on ${difficulty} difficulty...`,
         metaChips: [
             `Side: ${playerSide}`,
+            `Difficulty: ${difficulty}`,
             `Time: ${formatDuration(elapsedSeconds)}`,
             winner
                 ? `Result: ${winner === 'DRAW' ? 'Draw' : winner === playerSide ? 'Win' : 'Defeat'}`

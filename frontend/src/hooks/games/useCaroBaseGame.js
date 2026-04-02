@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { COLORS, createGrid, formatDuration, resolveBoardLayout } from './gameUtils';
+import { getCaroAiMove } from './ai/caroAi';
 
 const createBoard = (boardSize) => Array.from({ length: boardSize }, () => Array(boardSize).fill(null));
 
@@ -64,6 +65,7 @@ export const useCaroBaseGame = ({ onGameOver, targetLength, title, gameMeta }) =
     const [board, setBoard] = useState(() => createBoard(boardLayout.size));
     const [cursor, setCursor] = useState(defaultCursor);
     const [playerSide, setPlayerSide] = useState('X');
+    const [difficulty, setDifficulty] = useState('medium');
     const [isPlayerTurn, setIsPlayerTurn] = useState(true);
     const [winner, setWinner] = useState(null);
     const [isDirty, setIsDirty] = useState(false);
@@ -123,15 +125,25 @@ export const useCaroBaseGame = ({ onGameOver, targetLength, title, gameMeta }) =
         return getAvailableMoves(currentBoard).length ? null : 'DRAW';
     };
 
-    const triggerAiMove = (currentBoard, aiSide) => {
+    const triggerAiMove = (currentBoard, aiSide, selectedDifficulty = difficulty) => {
         window.setTimeout(() => {
-            const availableMoves = getAvailableMoves(currentBoard);
-
-            if (!availableMoves.length || evaluateBoard(currentBoard)) {
+            if (evaluateBoard(currentBoard)) {
                 return;
             }
 
-            const move = availableMoves[Math.floor(Math.random() * availableMoves.length)];
+            const currentPlayerSide = aiSide === 'X' ? 'O' : 'X';
+            const move = getCaroAiMove({
+                board: currentBoard,
+                aiSide,
+                playerSide: currentPlayerSide,
+                difficulty: selectedDifficulty,
+                targetLength,
+            });
+
+            if (!move) {
+                return;
+            }
+
             const nextBoard = currentBoard.map((row) => [...row]);
             nextBoard[move.row][move.col] = aiSide;
             setBoard(nextBoard);
@@ -209,11 +221,16 @@ export const useCaroBaseGame = ({ onGameOver, targetLength, title, gameMeta }) =
         return grid;
     };
 
-    const reset = (preferredSide = 'X') => {
+    const reset = (options = {}) => {
+        const preferredSide =
+            typeof options === 'string' ? options : options.side || 'X';
+        const selectedDifficulty =
+            typeof options === 'string' ? difficulty : options.difficulty || 'medium';
         const freshBoard = createBoard(boardLayout.size);
         setBoard(freshBoard);
         setCursor(defaultCursor);
         setPlayerSide(preferredSide);
+        setDifficulty(selectedDifficulty);
         setWinner(null);
         setIsDirty(false);
         setElapsedSeconds(0);
@@ -225,13 +242,14 @@ export const useCaroBaseGame = ({ onGameOver, targetLength, title, gameMeta }) =
         }
 
         setIsPlayerTurn(false);
-        triggerAiMove(freshBoard, 'X');
+        triggerAiMove(freshBoard, 'X', selectedDifficulty);
     };
 
     const getState = () => ({
         board,
         cursor,
         playerSide,
+        difficulty,
         isPlayerTurn,
         elapsedSeconds,
     });
@@ -244,6 +262,7 @@ export const useCaroBaseGame = ({ onGameOver, targetLength, title, gameMeta }) =
         setBoard(state.board || createBoard(boardLayout.size));
         setCursor(state.cursor || defaultCursor);
         setPlayerSide(state.playerSide || 'X');
+        setDifficulty(state.difficulty || 'medium');
         setIsPlayerTurn(state.isPlayerTurn !== false);
         setElapsedSeconds(state.elapsedSeconds || 0);
         setWinner(null);
@@ -262,7 +281,10 @@ export const useCaroBaseGame = ({ onGameOver, targetLength, title, gameMeta }) =
         getState,
         loadState,
         isDirty,
+        currentDifficulty: difficulty,
         requiresSideSelection: true,
+        supportsDifficultySelection: true,
+        defaultDifficulty: 'medium',
         runtimeConfig: {
             boardSize: boardLayout.size,
             defaultTimer: 0,
@@ -300,10 +322,11 @@ export const useCaroBaseGame = ({ onGameOver, targetLength, title, gameMeta }) =
                     : `The computer connected ${targetLength} first.`
             : isPlayerTurn
                 ? 'Pick an open tile to place your next stone.'
-                : 'Computer is selecting a reply move.',
+                : `Computer is selecting a ${difficulty} reply move.`,
         metaChips: [
             `Board: ${boardLayout.size}x${boardLayout.size}`,
             `Goal: ${targetLength} in a row`,
+            `Difficulty: ${difficulty}`,
             `Time: ${formatDuration(elapsedSeconds)}`,
             winner
                 ? `Result: ${winner === 'DRAW' ? 'Draw' : winner === playerSide ? 'Win' : 'Defeat'}`

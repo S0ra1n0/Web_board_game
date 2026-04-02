@@ -21,6 +21,7 @@ const GameRuntimeShell = ({ gameMeta, gameId, useGameHook }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const [sideSelectionModal, setSideSelectionModal] = useState(null);
+    const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
     const [exitConfirmModal, setExitConfirmModal] = useState(null);
     const [gameOverModal, setGameOverModal] = useState(null);
     const [hintModal, setHintModal] = useState(null);
@@ -56,9 +57,15 @@ const GameRuntimeShell = ({ gameMeta, gameId, useGameHook }) => {
             return;
         }
 
+        setSelectedDifficulty(gameInstance.currentDifficulty || gameInstance.defaultDifficulty || 'medium');
         setSideSelectionModal({
-            onSelect: (side) => {
-                gameInstance.reset(side);
+            supportsDifficultySelection: Boolean(gameInstance.supportsDifficultySelection),
+            onSelect: (side, difficulty) => {
+                gameInstance.reset(
+                    gameInstance.supportsDifficultySelection
+                        ? { side, difficulty }
+                        : side
+                );
                 setIsPlaying(true);
                 setSideSelectionModal(null);
             },
@@ -167,6 +174,9 @@ const GameRuntimeShell = ({ gameMeta, gameId, useGameHook }) => {
                 { label: 'Score Type', value: gameMeta?.score_type || 'N/A' },
                 { label: 'Board Size', value: resolvedBoardSize ? `${resolvedBoardSize}x${resolvedBoardSize}` : 'N/A' },
                 { label: 'Default Timer', value: resolvedTimer ? `${resolvedTimer}s` : 'No limit' },
+                ...(gameInstance.supportsDifficultySelection
+                    ? [{ label: 'Difficulty', value: gameInstance.currentDifficulty || gameInstance.defaultDifficulty || 'medium' }]
+                    : []),
             ],
             sections:
                 gameInstance.guideSections || [
@@ -223,16 +233,32 @@ const GameRuntimeShell = ({ gameMeta, gameId, useGameHook }) => {
                 <div className="modal-overlay" style={modalOverlayStyle}>
                     <div className="glass-panel" style={modalCardStyle}>
                         <h2 style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>Pick Your Side</h2>
+                        {sideSelectionModal.supportsDifficultySelection ? (
+                            <div style={{ marginTop: '1.25rem' }}>
+                                <p style={{ color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
+                                    Choose AI difficulty for this round
+                                </p>
+                                <select
+                                    value={selectedDifficulty}
+                                    onChange={(event) => setSelectedDifficulty(event.target.value)}
+                                    style={modalSelectStyle}
+                                >
+                                    <option value="easy">Easy</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="hard">Hard</option>
+                                </select>
+                            </div>
+                        ) : null}
                         <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
                             <button
-                                onClick={() => sideSelectionModal.onSelect('X')}
+                                onClick={() => sideSelectionModal.onSelect('X', selectedDifficulty)}
                                 className="control-btn enter-btn"
                                 style={largeButtonStyle}
                             >
                                 PLAY AS X
                             </button>
                             <button
-                                onClick={() => sideSelectionModal.onSelect('O')}
+                                onClick={() => sideSelectionModal.onSelect('O', selectedDifficulty)}
                                 className="control-btn action-btn"
                                 style={largeButtonStyle}
                             >
@@ -393,6 +419,16 @@ const fullWidthButtonStyle = {
     marginTop: '1.5rem',
     padding: '1rem',
     fontSize: '1.1rem',
+};
+
+const modalSelectStyle = {
+    width: '100%',
+    background: 'var(--bg-secondary)',
+    border: '2px solid var(--glass-border)',
+    borderRadius: '12px',
+    padding: '0.85rem 1rem',
+    color: 'var(--text-primary)',
+    fontSize: '1rem',
 };
 
 const flexButtonStyle = {
